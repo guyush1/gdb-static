@@ -44,7 +44,7 @@ Clone gdb from sourceware - https://sourceware.org/git/binutils-gdb.git.
 I checked out to the 15.1 tag.
 
 Work according to the following steps:
-I) Apply my patches - if you are not on the exact tag i used (15.1) - you might need to apply them manually.
+I) Apply my patches (gdb_static.patch). If you are not on the exact tag i used (15.1) - you might need to apply them manually, and change some stuff.
 II) create a build dir.
 III) run `../configure --enable-static --with-static-standard-libraries --disable-tui --disable-inprocess-agent --with-libiconv-prefix=<COMPILATION_DIR_PATH>/lib/.libs/ --with-libiconv-type=static`
 IV) run `make all-gdb -j$(nproc)` - for gdbserver, run `make all-gdbserver -j$(nproc)`.

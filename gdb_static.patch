@@ -1,0 +1,70 @@
+diff --git a/Makefile.in b/Makefile.in
+index f12c251f9c8..eed512b2d18 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -31593,7 +31593,7 @@ configure-readline:
+ 	  $$s/$$module_srcdir/configure \
+ 	  --srcdir=$${topdir}/$$module_srcdir \
+ 	  $(HOST_CONFIGARGS) --build=${build_alias} --host=${host_alias} \
+-	  --target=${target_alias}  \
++	  --target=${target_alias} --enable-static  \
+ 	  || exit 1
+ @endif readline
+ 
+@@ -40793,7 +40793,7 @@ configure-libcc1:
+ 	  $$s/$$module_srcdir/configure \
+ 	  --srcdir=$${topdir}/$$module_srcdir \
+ 	  $(HOST_CONFIGARGS) --build=${build_alias} --host=${host_alias} \
+-	  --target=${target_alias} --enable-shared \
++	  --target=${target_alias} --enable-static --disable-shared \
+ 	  || exit 1
+ @endif libcc1
+ 
+diff --git a/configure b/configure
+index 6466b97f3ec..2ab23dcb81e 100755
+--- a/configure
++++ b/configure
+@@ -9398,7 +9398,7 @@ case " $configdirs " in
+   *" lto-plugin "* | *" libcc1 "* | *" gdbserver "*)
+     # When these are to be built as shared libraries, the same applies to
+     # libiberty.
+-    extra_host_libiberty_configure_flags=--enable-shared
++    extra_host_libiberty_configure_flags="--enable-static --disable-shared"
+     ;;
+ esac
+ 
+diff --git a/gdb/Makefile.in b/gdb/Makefile.in
+index 84bc54b303e..c81269ced78 100644
+--- a/gdb/Makefile.in
++++ b/gdb/Makefile.in
+@@ -148,7 +148,7 @@ LIBTOOL = @LIBTOOL@
+ # Set this up with gcc if you have gnu ld and the loader will print out
+ # line numbers for undefined references.
+ #CC_LD = g++ -static
+-CC_LD = $(LIBTOOL) $(SILENT_FLAG) --mode=link $(CXX) $(CXX_DIALECT)
++CC_LD = $(LIBTOOL) $(SILENT_FLAG) --mode=link $(CXX) -all-static $(CXX_DIALECT)
+ 
+ # Where is our "include" directory?  Typically $(srcdir)/../include.
+ # This is essentially the header file directory for the library
+diff --git a/gdbserver/Makefile.in b/gdbserver/Makefile.in
+index 6148ccf9121..2a9c9720d1a 100644
+--- a/gdbserver/Makefile.in
++++ b/gdbserver/Makefile.in
+@@ -83,7 +83,7 @@ COMPILE = $(ECHO_CXX) $(COMPILE.pre) $(INTERNAL_CFLAGS) $(INCLUDE_SERVER_H) \
+ # Set this up with gcc if you have gnu ld and the loader will print out
+ # line numbers for undefinded refs.
+ #CC_LD = g++ -static
+-CC_LD = $(CXX) $(CXX_DIALECT)
++CC_LD = $(CXX) -static $(CXX_DIALECT)
+ 
+ # Where is the "include" directory?  Traditionally ../include or ./include
+ INCLUDE_DIR = ${srcdir}/../include
+@@ -405,7 +405,7 @@ IPA_LIB = libinproctrace.so
+ 
+ $(IPA_LIB): $(sort $(IPA_OBJS)) ${CDEPS}
+ 	$(SILENCE) rm -f $(IPA_LIB)
+-	$(ECHO_CXXLD) $(CC_LD) -shared -fPIC -Wl,--soname=$(IPA_LIB) \
++	$(ECHO_CXXLD) $(CC_LD) -static -fPIC -Wl,--soname=$(IPA_LIB) \
+ 		-Wl,--no-undefined $(INTERNAL_CFLAGS) $(INTERNAL_LDFLAGS) \
+ 		 $(CXXFLAGS) \
+ 		-o $(IPA_LIB) ${IPA_OBJS} $(LIBIBERTY_FOR_SHLIB) -ldl -pthread
