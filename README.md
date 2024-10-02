@@ -86,6 +86,8 @@ II) run `../configure CC=<CROSS_COMPILER_C> CXX=<CROSS_COMPILER_CPP> --enable-st
 III) run `make -j$(nproc)`
 IV) run `mkdir ./src/.libs/lib`
 V) run `cp ./src/.libs/libmpfr.a ./src/.libs/lib`
+VI) run `mkdir ./src/.libs/include`
+VII) run `cp ../src/mpfr.h ./src/.libs/include/`
 
 ## 4) Compiling gdb
 
