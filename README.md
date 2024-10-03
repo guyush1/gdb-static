@@ -2,6 +2,52 @@
 
 The statically compiled gdb / gdbserver binaries are avaliable to download under github releases! 
 
+# Compiling gdb using docker
+
+I have provided a dockerfile that will compile gdb statically for you.
+Currently, the supported architectures are:
+- x86_64
+- arm
+- aarch64
+- powerpc (32bit)
+
+You can easily expand it to support more architectures by adding the appropriate cross compilers to the dockerfile, makefile and build.sh.
+
+## Building for a specific architecture
+
+To build for a specific architecture, you can use the following command:
+```bash
+make build-<ARCH>
+```
+
+For example, to build for arm:
+```bash
+make build-arm
+```
+
+The resulting binaries will be placed under the `build/artifacts/` directory.
+Each architecture will have its own directory under `build/artifacts/`. For example, the arm architecture will have the following directory structure:
+```
+build/
+    artifacts/
+        arm/
+            ...
+```
+
+## Building for all architectures
+
+To build for all architectures, you can use the following command:
+```bash
+make build
+```
+
+## Cleaning the build
+
+To clean the build, you can use the following command:
+```bash
+make clean
+```
+
 # Notes about this file - read before proceeding!
 
 While i already provided the gdb/gdbserver-15 statically compiled binaries handed out to you, some people might want to compile it to a different architecture, or compile a newer version of gdb in the future :). This rest of the file contains my compilation documentation so that you could save yourself some time and do it yourself, if you wish.
