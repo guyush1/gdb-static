@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Include utils library
+script_dir=$(dirname "$0")
+. "$script_dir/utils.sh"
+
 function set_compliation_variables() {
     # Set compilation variables such as which compiler to use.
     #
@@ -17,6 +21,8 @@ function set_compliation_variables() {
         >&2 echo "Error: unsupported target architecture: $target_arch"
         return 1
     fi
+
+    >&2 fancy_title "Setting compilation variables for $target_arch"
 
     if [[ "$target_arch" == "arm" ]]; then
         CROSS=arm-linux-gnueabi-
@@ -67,6 +73,8 @@ function build_iconv() {
 
     pushd "$iconv_build_dir" > /dev/null
 
+    >&2 fancy_title "Building libiconv for $target_arch"
+
     ../configure --enable-static "CC=$CC" "CXX=$CXX" "--host=$HOST" \
         "CFLAGS=$CFLAGS" "CXXFLAGS=$CXXFLAGS" 1>&2
     if [[ $? -ne 0 ]]; then
@@ -81,6 +89,8 @@ function build_iconv() {
     cp -r ./include ./lib/.libs/
     mkdir -p ./lib/.libs/lib/
     cp ./lib/.libs/libiconv.a ./lib/.libs/lib/
+
+    >&2 fancy_title "Finished building libiconv for $target_arch"
 
     popd > /dev/null
 }
@@ -113,6 +123,8 @@ function build_libgmp() {
 
     pushd "$gmp_build_dir" > /dev/null
 
+    >&2 fancy_title "Building libgmp for $target_arch"
+
     ../configure --enable-static "CC=$CC" "CXX=$CXX" "--host=$HOST" \
         "CFLAGS=$CFLAGS" "CXXFLAGS=$CXXFLAGS" 1>&2
     if [[ $? -ne 0 ]]; then
@@ -128,6 +140,8 @@ function build_libgmp() {
     cp gmp.h ./.libs/include/
     mkdir -p ./.libs/lib/
     cp ./.libs/libgmp.a ./.libs/lib/
+
+    >&2 fancy_title "Finished building libgmp for $target_arch"
 
     popd > /dev/null
 }
@@ -162,6 +176,8 @@ function build_libmpfr() {
 
     pushd "$mpfr_dir/build-$target_arch" > /dev/null
 
+    >&2 fancy_title "Building libmpfr for $target_arch"
+
     ../configure --enable-static "--with-gmp-build=$libgmp_build_dir" \
         "CC=$CC" "CXX=$CXX" "--host=$HOST" \
         "CFLAGS=$CFLAGS" "CXXFLAGS=$CXXFLAGS" 1>&2
@@ -178,6 +194,8 @@ function build_libmpfr() {
     cp ../src/mpfr.h ./src/.libs/include/
     mkdir -p ./src/.libs/lib
     cp ./src/.libs/libmpfr.a ./src/.libs/lib/
+
+    >&2 fancy_title "Finished building libmpfr for $target_arch"
 
     popd > /dev/null
 }
@@ -216,6 +234,8 @@ function build_gdb() {
 
     pushd "$gdb_build_dir" > /dev/null
 
+    >&2 fancy_title "Building gdb for $target_arch"
+
     ../configure --enable-static --with-static-standard-libraries --disable-tui --disable-inprocess-agent \
                  "--with-libiconv-prefix=$libiconv_prefix" --with-libiconv-type=static \
                  "--with-gmp=$libgmp_prefix" \
@@ -230,6 +250,8 @@ function build_gdb() {
     if [[ $? -ne 0 ]]; then
         return 1
     fi
+
+    >&2 fancy_title "Finished building gdb for $target_arch"
 
     popd > /dev/null
 }

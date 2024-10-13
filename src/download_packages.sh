@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Include utils library
+script_dir=$(dirname "$0")
+. "$script_dir/utils.sh"
+
 # List of package URLs to download
 PACKAGE_URLS=(
     "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.17.tar.gz"
@@ -182,6 +186,8 @@ function download_gdb_packages() {
     # Run downloads in parallel
     download_pids=()
 
+    fancy_title "Starting download of GDB packages"
+
     for url in "${PACKAGE_URLS[@]}"; do
         package_dir=$(package_url_to_dir "$url")
         download_and_extract_package "$url" "$package_dir" &
@@ -195,6 +201,8 @@ function download_gdb_packages() {
             return 1
         fi
     done
+
+    fancy_title "Finished downloading GDB packages"
 
     popd
 }

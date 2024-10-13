@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Include utils library
+script_dir=$(dirname "$0")
+. "$script_dir/utils.sh"
+
 function apply_patch() {
     # Apply a patch to a directory.
     #
@@ -41,11 +45,13 @@ function main() {
         exit 1
     fi
 
+    fancy_title "Applying GDB patch"
     apply_patch "$1" "$2"
     if [[ $? -ne 0 ]]; then
         >&2 echo "Error: failed to apply GDB patch"
         exit 1
     fi
+    fancy_title "Finished applying GDB patch"
 }
 
 main "$@"
