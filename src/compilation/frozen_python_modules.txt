@@ -1,4 +1,3 @@
-abc
 _aix_support
 antigravity
 argparse
@@ -8,7 +7,6 @@ bdb
 bisect
 calendar
 cmd
-codecs
 codeop
 code
 <collections.**.*>
@@ -54,7 +52,6 @@ hmac
 imaplib
 <importlib.**.*>
 inspect
-io
 ipaddress
 <json.**.*>
 keyword
