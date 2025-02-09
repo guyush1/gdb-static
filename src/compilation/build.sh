@@ -442,6 +442,9 @@ function build_gdb() {
     ../configure -C --enable-static --with-static-standard-libraries --disable-inprocess-agent \
                  --enable-tui "$python_flag" \
                  --with-expat --with-libexpat-type="static" \
+                 --with-gdb-datadir="/usr/share/gdb" --with-separate-debug-dir="/usr/lib/debug" \
+                 --with-system-gdbinit="/etc/gdb/gdbinit" --with-system-gdbinit-dir="/etc/gdb/gdbinit.d" \
+                 --with-jit-reader-dir="/usr/lib/gdb" \
                  "--with-libiconv-prefix=$libiconv_prefix" --with-libiconv-type=static \
                  "--with-gmp=$libgmp_prefix" \
                  "--with-mpfr=$libmpfr_prefix" \
