@@ -20,7 +20,7 @@
     <img src="https://img.shields.io/github/contributors-anon/guyush1/gdb-static?color=yellow&style=flat-square" alt="contributors" style="height: 20px;">
   </a>
   <br>
-  <img src="https://img.shields.io/badge/GDB-v15.2-orange?logo=gnu&logoColor=white&style=flat-square" alt="gdb" style="height: 20px;">
+  <img src="https://img.shields.io/badge/GDB-v16.2-orange?logo=gnu&logoColor=white&style=flat-square" alt="gdb" style="height: 20px;">
   <img src="https://img.shields.io/badge/Python-built--in-blue?logo=python&logoColor=white&style=flat-square" alt="python" style="height: 20px;">
 </h4>
 

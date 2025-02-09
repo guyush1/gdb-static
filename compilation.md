@@ -1,7 +1,7 @@
 # Notes about this file - read before proceeding!
 
-While we have already provided the gdb/gdbserver-15 statically compiled binaries for you, some people might want to compile it without our build scripts, or compile a newer version of gdb in the future :).
-This rest of the file contains a documentation of the compilation process, in order to help you out.
+While we have already provided the gdb/gdbserver statically compiled binaries for you, some people might want to compile it without our build scripts, or compile a newer version of gdb in the future :).
+The rest of the file contains a documentation of the compilation process, in order to help you out.
 
 NOTE: The compilation guide describes the compilation process in order to create a minimal-working version of gdb. Our build-scripts also provides further capabilites to gdb, such as python and xml support, which are not documented in this file. 
 
@@ -20,7 +20,7 @@ Examples to the <VARIABLES> throughout the script:
 - <COMPILATION_DIR_PATH> - /home/username/projects/libgmp-x.y.z/build-arm/
 
 Environment info:
-- glibc version: 2.39-0ubuntu8.3 (NOTE: When i compiled gdb-15 using an older glibc, such as the one i had in my ubuntu-20.04 machine, i received a segfault in gdb, so the libc version is important!).
+- glibc version: 2.39-0ubuntu8.3 (NOTE: When i compiled gdb using an older glibc, such as the one i had in my ubuntu-20.04 machine, i received a segfault in gdb, so the libc version is important!).
 
 # Compiling gdb statically to the host platform
 
