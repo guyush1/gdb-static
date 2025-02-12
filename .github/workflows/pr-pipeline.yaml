@@ -24,5 +24,8 @@ jobs:
     - name: Build docker image
       run: make build-docker-image
 
+    - name: Download packages
+      run: make download-packages
+
     - name: Build
       run: make ${{ matrix.build_type }}-${{ matrix.architecture }} -j$((`nproc`+1))
