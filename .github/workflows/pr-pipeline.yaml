@@ -21,5 +21,8 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get install -y wget
 
+    - name: Build docker image
+      run: make build-docker-image
+
     - name: Build
       run: make ${{ matrix.build_type }}-${{ matrix.architecture }} -j$((`nproc`+1))
