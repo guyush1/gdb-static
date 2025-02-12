@@ -27,5 +27,8 @@ jobs:
     - name: Download packages
       run: make download-packages
 
+    - name: Build GDB dependencies
+      run: make build-common-${{ matrix.architecture }} -j$((`nproc`+1))
+
     - name: Build
       run: make ${{ matrix.build_type }}-${{ matrix.architecture }} -j$((`nproc`+1))
