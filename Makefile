@@ -1,6 +1,7 @@
 ARCHS := x86_64 arm aarch64 powerpc mips mipsel
 
 TARGETS := $(addprefix build-, $(ARCHS))
+COMMON_TARGETS := $(addprefix build-common-, $(ARCHS))
 PYTHON_TARGETS := $(addprefix build-with-python-, $(ARCHS))
 ALL_TARGETS := $(TARGETS) $(PYTHON_TARGETS)
 
@@ -55,13 +56,16 @@ $(TARGETS): build-%:
 	@$(MAKE) _build-$*
 
 $(PYTHON_TARGETS): build-with-python-%:
-	@WITH_PYTHON="--with-python" $(MAKE) _build-$*
+	@EXTRA_ARGS="--with-python" $(MAKE) _build-$*
+
+$(COMMON_TARGETS): build-common-%:
+	@EXTRA_ARGS="--common-only" $(MAKE) _build-$*
 
 _build-%: symlink-git-packages download-packages build-docker-image
 	mkdir -p build
 	docker run --user $(shell id -u):$(shell id -g) \
 		--rm --volume .:/app/gdb gdb-static env TERM=xterm-256color \
-		/app/gdb/src/compilation/build.sh $* /app/gdb/build/ /app/gdb/src $(WITH_PYTHON)
+		/app/gdb/src/compilation/build.sh $* /app/gdb/build/ /app/gdb/src $(EXTRA_ARGS)
 
 pack: $(ALL_PACK_TARGETS)
 
