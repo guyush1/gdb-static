@@ -25,6 +25,10 @@ function set_compliation_variables() {
         return 1
     fi
 
+    if [[ -n "$CURRENT_COMPILATION_VARIABLE_ARCH" && "$CURRENT_COMPILATION_VARIABLE_ARCH" == "$target_arch" ]]; then
+        return 0
+    fi
+
     >&2 fancy_title "Setting compilation variables for $target_arch"
 
     if [[ "$target_arch" == "arm" ]]; then
@@ -55,6 +59,8 @@ function set_compliation_variables() {
 
     # Strip the binary to reduce it's size.
     export LDFLAGS="-s"
+
+    export CURRENT_COMPILATION_VARIABLE_ARCH="$target_arch"
 }
 
 function set_up_lib_search_paths() {
@@ -545,6 +551,50 @@ function build_and_install_gdb() {
     fi
 }
 
+function build_gdb_dependencies() {
+    # Build gdb dependencies for a specific target architecture.
+    # NOTE: Dependencies doesn't inlcude python.
+    #
+    # Parameters:
+    # $1: target architecture
+    # $2: build directory
+
+    local target_arch="$1"
+    local build_dir="$2"
+
+    set_compliation_variables "$target_arch"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    mkdir -p "$build_dir"
+
+    export ICONV_BUILD_DIR="$(build_iconv "$build_dir/libiconv" "$target_arch")"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    export GMP_BUILD_DIR="$(build_libgmp "$build_dir/gmp" "$target_arch")"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    export MPFR_BUILD_DIR="$(build_libmpfr "$build_dir/mpfr" "$GMP_BUILD_DIR" "$target_arch")"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    export NCURSESW_BUILD_DIR="$(build_ncurses "$build_dir/ncurses" "$target_arch")"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    export LIBEXPAT_BUILD_DIR="$(build_libexpat "$build_dir/libexpat" "$target_arch")"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+}
+
 function build_gdb_with_dependencies() {
     # Build gdb for a specific target architecture.
     #
@@ -568,32 +618,12 @@ function build_gdb_with_dependencies() {
 
     mkdir -p "$packages_dir"
 
-    iconv_build_dir="$(build_iconv "$packages_dir/libiconv" "$target_arch")"
+    build_gdb_dependencies "$target_arch" "$packages_dir"
     if [[ $? -ne 0 ]]; then
         return 1
     fi
 
-    gmp_build_dir="$(build_libgmp "$packages_dir/gmp" "$target_arch")"
-    if [[ $? -ne 0 ]]; then
-        return 1
-    fi
-
-    mpfr_build_dir="$(build_libmpfr "$packages_dir/mpfr" "$gmp_build_dir" "$target_arch")"
-    if [[ $? -ne 0 ]]; then
-        return 1
-    fi
-
-    ncursesw_build_dir="$(build_ncurses "$packages_dir/ncurses" "$target_arch")"
-    if [[ $? -ne 0 ]]; then
-        return 1
-    fi
-
-    libexpat_build_dir="$(build_libexpat "$packages_dir/libexpat" "$target_arch")"
-    if [[ $? -ne 0 ]]; then
-        return 1
-    fi
-
-    set_up_lib_search_paths "$ncursesw_build_dir" "$libexpat_build_dir"
+    set_up_lib_search_paths "$NCURSESW_BUILD_DIR" "$LIBEXPAT_BUILD_DIR"
 
     if [[ "$with_python" == "yes" ]]; then
         local gdb_python_dir="$packages_dir/binutils-gdb/gdb/python/lib/"
@@ -605,9 +635,9 @@ function build_gdb_with_dependencies() {
     fi
 
     build_and_install_gdb "$packages_dir/binutils-gdb" \
-                          "$iconv_build_dir/lib/.libs/" \
-                          "$gmp_build_dir/.libs/" \
-                          "$mpfr_build_dir/src/.libs/" \
+                          "$ICONV_BUILD_DIR/lib/.libs/" \
+                          "$GMP_BUILD_DIR/.libs/" \
+                          "$MPFR_BUILD_DIR/src/.libs/" \
                           "$with_python" \
                           "$artifacts_dir" \
                           "$target_arch"
@@ -618,13 +648,39 @@ function build_gdb_with_dependencies() {
 
 function main() {
     if [[ $# -lt 3 ]]; then
-        >&2 echo "Usage: $0 <target_arch> <build_dir> <src_dir> [--with-python]"
+        >&2 echo "Usage: $0 <target_arch> <build_dir> <src_dir> [--with-python | --common-only]"
         exit 1
     fi
 
     local with_python="no"
-    if [[ "$4" == "--with-python" ]]; then
-        with_python="yes"
+    local common_only="no"
+
+    for arg in "$@"; do
+        case "$arg" in
+            --with-python)
+                if [[ "$common_only" == "yes" ]]; then
+                    >&2 echo "Error: --with-python and --common-only are mutually exclusive"
+                    exit 1
+                fi
+                with_python="yes"
+                ;;
+            --common-only)
+                if [[ "$with_python" == "yes" ]]; then
+                    >&2 echo "Error: --with-python and --common-only are mutually exclusive"
+                    exit 1
+                fi
+                common_only="yes"
+                ;;
+        esac
+    done
+
+    if [[ "$common_only" == "yes" ]]; then
+        build_gdb_dependencies "$1" "$2/packages"
+        if [[ $? -ne 0 ]]; then
+            >&2 echo "Error: failed to build common dependencies"
+            exit 1
+        fi
+        exit 0
     fi
 
     build_gdb_with_dependencies "$1" "$2" "$3" "$with_python"
