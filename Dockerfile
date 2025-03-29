@@ -30,4 +30,9 @@ RUN apt update && apt install -y \
     wget \
     xz-utils
 
+# Install musl-based toolchains.
+ENV MUSL_INSTALL_DIR="/opt/musl-cross"
+COPY src/compilation/install_musl_toolchains.sh .
+RUN ./install_musl_toolchains.sh
+
 WORKDIR /app/gdb
