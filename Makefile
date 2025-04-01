@@ -59,7 +59,7 @@ $(PYTHON_TARGETS): build-with-python-%:
 
 _build-%: symlink-git-packages download-packages build-docker-image
 	mkdir -p build
-	docker run --user $(shell id -u):$(shell id -g) \
+	docker run -it --user $(shell id -u):$(shell id -g) \
 		--rm --volume .:/app/gdb gdb-static env TERM=xterm-256color \
 		/app/gdb/src/compilation/build.sh $* /app/gdb/build/ /app/gdb/src $(WITH_PYTHON)
 

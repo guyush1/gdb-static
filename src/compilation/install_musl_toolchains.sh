@@ -29,15 +29,6 @@ for ARCH in "${ARCHS[@]}"; do
     wget -q --show-progress "$URL"
 
     echo "Extracting $TOOLCHAIN_TAR..."
-    tar -xzf "$TOOLCHAIN_TAR"
+    tar -xzf "$TOOLCHAIN_TAR" --strip-components=1
     rm "$TOOLCHAIN_TAR"
 done
-
-# Add the installed toolchains to the PATH.
-echo "Updating PATH..."
-MUSL_PATHS=""
-for dir in /opt/musl-cross/*/bin; do
-    MUSL_PATHS="$dir:$MUSL_PATHS"
-done
-
-echo "PATH=$MUSL_PATHS:$PATH" >> ~/.bashrc

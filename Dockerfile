@@ -31,7 +31,7 @@ RUN apt update && apt install -y \
     xz-utils
 
 # Install musl-based toolchains.
-ENV MUSL_INSTALL_DIR="/opt/musl-cross"
+ENV MUSL_INSTALL_DIR="/usr/"
 COPY src/compilation/install_musl_toolchains.sh .
 RUN ./install_musl_toolchains.sh
 
