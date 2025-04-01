@@ -28,23 +28,23 @@ function set_compliation_variables() {
     >&2 fancy_title "Setting compilation variables for $target_arch"
 
     if [[ "$target_arch" == "arm" ]]; then
-        CROSS=arm-linux-gnueabi-
-        export HOST=arm-linux-gnueabi
+        CROSS=arm-linux-musleabi-
+        export HOST=arm-linux-musleabi
     elif [[ "$target_arch" == "aarch64" ]]; then
-        CROSS=aarch64-linux-gnu-
-        export HOST=aarch64-linux-gnu
+        CROSS=aarch64-linux-musl-
+        export HOST=aarch64-linux-musl
     elif [[ "$target_arch" == "powerpc" ]]; then
-        CROSS=powerpc-linux-gnu-
-        export HOST=powerpc-linux-gnu
+        CROSS=powerpc-linux-musl-
+        export HOST=powerpc-linux-musl
     elif [[ "$target_arch" == "mips" ]]; then
-        CROSS=mips-linux-gnu-
-        export HOST=mips-linux-gnu
+        CROSS=mips-linux-musl-
+        export HOST=mips-linux-musl
     elif [[ "$target_arch" == "mipsel" ]]; then
-        CROSS=mipsel-linux-gnu-
-        export HOST=mipsel-linux-gnu
+        CROSS=mipsel-linux-musl-
+        export HOST=mipsel-linux-musl
     elif [[ "$target_arch" == "x86_64" ]]; then
-        CROSS=x86_64-linux-gnu-
-        export HOST=x86_64-linux-gnu
+        CROSS=x86_64-linux-musl-
+        export HOST=x86_64-linux-musl
     fi
 
     export CC="${CROSS}gcc"
