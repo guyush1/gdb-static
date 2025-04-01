@@ -552,7 +552,7 @@ function install_gdb() {
 
     mkdir -p "$artifacts_location"
 
-    make -C "$gdb_build_dir" install "DESTDIR=$temp_artifacts_dir" 1>&2
+    make -j$(nproc) -C "$gdb_build_dir" install "DESTDIR=$temp_artifacts_dir" 1>&2
     if [[ $? -ne 0 ]]; then
         rm -rf "$temp_artifacts_dir"
         return 1
