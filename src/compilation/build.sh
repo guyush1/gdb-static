@@ -493,7 +493,7 @@ function build_gdb() {
 
     >&2 fancy_title "Building gdb for $target_arch"
 
-    ../configure -C --enable-static --with-static-standard-libraries --disable-inprocess-agent \
+    ../configure --enable-static --with-static-standard-libraries --disable-inprocess-agent \
                  --enable-tui "$python_flag" \
                  --with-expat --with-libexpat-type="static" \
                  --with-gdb-datadir="/usr/share/gdb" --with-separate-debug-dir="/usr/lib/debug" \
