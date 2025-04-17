@@ -36,7 +36,7 @@ build-docker-image: build/build-docker-image.stamp
 
 build/download-packages.stamp: build/build-docker-image.stamp src/compilation/download_packages.sh
 	mkdir -p $(BUILD_PACKAGES_DIR)
-	docker run --user $(shell id -u):$(shell id -g) \
+	docker run -it --user $(shell id -u):$(shell id -g) \
 		--rm --volume .:/app/gdb gdb-static env TERM=xterm-256color \
 		/app/gdb/src/compilation/download_packages.sh /app/gdb/$(BUILD_PACKAGES_DIR)/
 	touch build/download-packages.stamp
@@ -59,7 +59,7 @@ $(PYTHON_TARGETS): build-with-python-%:
 
 _build-%: symlink-git-packages download-packages build-docker-image
 	mkdir -p build
-	docker run --user $(shell id -u):$(shell id -g) \
+	docker run -it --user $(shell id -u):$(shell id -g) \
 		--rm --volume .:/app/gdb gdb-static env TERM=xterm-256color \
 		/app/gdb/src/compilation/build.sh $* /app/gdb/build/ /app/gdb/src $(WITH_PYTHON)
 
