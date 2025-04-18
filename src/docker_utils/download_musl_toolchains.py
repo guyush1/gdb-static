@@ -8,12 +8,12 @@ import shutil
 from pathlib import Path
 
 ARCHS = {
-    "x86_64" : "https://musl.cc/x86_64-linux-musl-cross.tgz",
-    "arm" : "https://musl.cc/arm-linux-musleabi-cross.tgz",
-    "aarch64" : "https://musl.cc/aarch64-linux-musl-cross.tgz",
-    "powerpc" : "https://musl.cc/powerpc-linux-musl-cross.tgz",
-    "mips" : "https://musl.cc/mips-linux-musl-cross.tgz",
-    "mipsel" : "https://musl.cc/mipsel-linux-musl-cross.tgz",
+    "x86_64" : "https://more.musl.cc/11/x86_64-linux-musl/x86_64-linux-musl-cross.tgz",
+    "arm" : "https://more.musl.cc/10/x86_64-linux-musl/arm-linux-musleabi-cross.tgz",
+    "aarch64" : "https://more.musl.cc/11/x86_64-linux-musl/aarch64-linux-musl-cross.tgz",
+    "powerpc" : "https://more.musl.cc/11/x86_64-linux-musl/powerpc-linux-musl-cross.tgz",
+    "mips" : "https://more.musl.cc/11/x86_64-linux-musl/mips-linux-musl-cross.tgz",
+    "mipsel" : "https://more.musl.cc/11/x86_64-linux-musl/mipsel-linux-musl-cross.tgz",
 }
 CHUNK_SIZE = 65536
 MUSL_TOOLCHAINS_DIR = Path("/musl-toolchains")
