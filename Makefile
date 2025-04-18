@@ -27,7 +27,7 @@ help:
 	@echo ""
 	@echo "  make clean"
 
-build/build-docker-image.stamp: Dockerfile
+build/build-docker-image.stamp: Dockerfile src/docker_utils/download_musl_toolchains.py
 	mkdir -p build
 	docker buildx build --tag gdb-static .
 	touch build/build-docker-image.stamp
