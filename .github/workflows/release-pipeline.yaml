@@ -9,6 +9,9 @@ on:
 # simply build the files in the same job they are released.
 jobs:
   build_and_publish:
+    env:
+      TTY_ARG: "" # Disable interactive build mode in cicd since it does not contain a tty device.
+
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4

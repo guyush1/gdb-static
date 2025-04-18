@@ -11,6 +11,10 @@ ALL_PACK_TARGETS := $(PACK_TARGETS) $(PYTHON_PACK_TARGETS)
 SUBMODULE_PACKAGES := $(wildcard src/submodule_packages/*)
 BUILD_PACKAGES_DIR := "build/packages"
 
+# We would like to run in interactive mode when avaliable (non-ci usually).
+# This is disabled by the ci automation manually.
+TTY_ARG ?= -it
+
 .PHONY: clean help download_packages build build-docker-image $(ALL_TARGETS) $(ALL_PACK_TARGETS)
 
 .NOTPARALLEL: build pack
@@ -36,7 +40,7 @@ build-docker-image: build/build-docker-image.stamp
 
 build/download-packages.stamp: build/build-docker-image.stamp src/compilation/download_packages.sh
 	mkdir -p $(BUILD_PACKAGES_DIR)
-	docker run -it --user $(shell id -u):$(shell id -g) \
+	docker run $(TTY_ARG) --user $(shell id -u):$(shell id -g) \
 		--rm --volume .:/app/gdb gdb-static env TERM=xterm-256color \
 		/app/gdb/src/compilation/download_packages.sh /app/gdb/$(BUILD_PACKAGES_DIR)/
 	touch build/download-packages.stamp
@@ -59,7 +63,7 @@ $(PYTHON_TARGETS): build-with-python-%:
 
 _build-%: symlink-git-packages download-packages build-docker-image
 	mkdir -p build
-	docker run -it --user $(shell id -u):$(shell id -g) \
+	docker run $(TTY_ARG) --user $(shell id -u):$(shell id -g) \
 		--rm --volume .:/app/gdb gdb-static env TERM=xterm-256color \
 		/app/gdb/src/compilation/build.sh $* /app/gdb/build/ /app/gdb/src $(WITH_PYTHON)
 
