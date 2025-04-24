@@ -121,6 +121,58 @@ function build_iconv() {
     popd > /dev/null
 }
 
+function build_lzma() {
+    # Build liblzma.
+    #
+    # Parameters:
+    # $1: lzma package directory
+    # $2: target architecture
+    #
+    # Echoes:
+    # The lzma build directory
+    #
+    # Returns:
+    # 0: success
+    # 1: failure
+
+    local lzma_dir="$1"
+    local target_arch="$2"
+    local lzma_build_dir="$(realpath "$lzma_dir/build-$target_arch")"
+
+    echo "$lzma_build_dir"
+    mkdir -p "$lzma_build_dir"
+
+    if [[ -f "$lzma_build_dir/usr/local/lib/liblzma.a" ]]; then
+        >&2 echo "Skipping build: lzma already built for $target_arch"
+        return 0
+    fi
+
+    pushd "$lzma_build_dir" > /dev/null
+
+    >&2 fancy_title "Building liblzma for $target_arch"
+
+    ../configure --enable-static "CC=$CC" "CXX=$CXX" "--host=$HOST" \
+        "CFLAGS=$CFLAGS" "CXXFLAGS=$CXXFLAGS" 1>&2
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    make -j$(nproc) 1>&2
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    make -j$(nproc) install DESTDIR=$lzma_build_dir 1>&2
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    >&2 fancy_title "Finished building liblzma for $target_arch"
+
+    popd > /dev/null
+}
+
+
 function build_libgmp() {
     # Build libgmp.
     #
@@ -401,9 +453,10 @@ function build_gdb() {
     # $1: gdb directory
     # $2: target architecture
     # $3: libiconv prefix
-    # $4: libgmp prefix
-    # $5: libmpfr prefix
-    # $6: whether to build with python or not
+    # $4: liblzma prefix
+    # $5: libgmp prefix
+    # $6: libmpfr prefix
+    # $7: whether to build with python or not
     #
     # Echoes:
     # The gdb build directory
@@ -415,9 +468,10 @@ function build_gdb() {
     local gdb_dir="$1"
     local target_arch="$2"
     local libiconv_prefix="$3"
-    local libgmp_prefix="$4"
-    local libmpfr_prefix="$5"
-    local with_python="$6"
+    local liblzma_prefix="$4"
+    local libgmp_prefix="$5"
+    local libmpfr_prefix="$6"
+    local with_python="$7"
 
     if [[ "$with_python" == "yes" ]]; then
         local python_flag="--with-python=/app/gdb/build/packages/cpython-static/build-$target_arch/bin/python3-config"
@@ -443,6 +497,7 @@ function build_gdb() {
                  --enable-tui "$python_flag" \
                  --with-expat --with-libexpat-type="static" \
                  "--with-libiconv-prefix=$libiconv_prefix" --with-libiconv-type=static \
+                 "--with-liblzma-prefix=$liblzma_prefix" --with-liblzma-type=static --with-lzma=yes \
                  "--with-gmp=$libgmp_prefix" \
                  "--with-mpfr=$libmpfr_prefix" \
                  "CC=$CC" "CXX=$CXX" "LDFLAGS=$LDFLAGS" "--host=$HOST" \
@@ -513,11 +568,12 @@ function build_and_install_gdb() {
     # Parameters:
     # $1: gdb package directory
     # $2: libiconv prefix
-    # $3: libgmp prefix
-    # $4: libmpfr prefix
-    # $5: whether to build with python or not
-    # $6: install directory
-    # $7: target architecture
+    # $3: liblzma prefix
+    # $4: libgmp prefix
+    # $5: libmpfr prefix
+    # $6: whether to build with python or not
+    # $7: install directory
+    # $8: target architecture
     #
     # Returns:
     # 0: success
@@ -525,13 +581,14 @@ function build_and_install_gdb() {
 
     local gdb_dir="$1"
     local libiconv_prefix="$2"
-    local libgmp_prefix="$3"
-    local libmpfr_prefix="$4"
-    local with_python="$5"
-    local artifacts_dir="$6"
-    local target_arch="$7"
+    local liblzma_prefix="$3"
+    local libgmp_prefix="$4"
+    local libmpfr_prefix="$5"
+    local with_python="$6"
+    local artifacts_dir="$7"
+    local target_arch="$8"
 
-    gdb_build_dir="$(build_gdb "$gdb_dir" "$target_arch" "$libiconv_prefix" "$libgmp_prefix" "$libmpfr_prefix" "$with_python")"
+    gdb_build_dir="$(build_gdb "$gdb_dir" "$target_arch" "$libiconv_prefix" "$liblzma_prefix" "$libgmp_prefix" "$libmpfr_prefix" "$with_python")"
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -570,6 +627,11 @@ function build_gdb_with_dependencies() {
         return 1
     fi
 
+    lzma_build_dir="$(build_lzma "$packages_dir/xz" "$target_arch")"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
     gmp_build_dir="$(build_libgmp "$packages_dir/gmp" "$target_arch")"
     if [[ $? -ne 0 ]]; then
         return 1
@@ -603,6 +665,7 @@ function build_gdb_with_dependencies() {
 
     build_and_install_gdb "$packages_dir/binutils-gdb" \
                           "$iconv_build_dir/lib/.libs/" \
+                          "$lzma_build_dir/usr/local/" \
                           "$gmp_build_dir/.libs/" \
                           "$mpfr_build_dir/src/.libs/" \
                           "$with_python" \
