@@ -154,7 +154,7 @@ function build_lzma() {
     echo "$lzma_build_dir"
     mkdir -p "$lzma_build_dir"
 
-    if [[ -f "$lzma_build_dir/usr/local/lib/liblzma.a" ]]; then
+    if [[ -f "$lzma_build_dir/lib/liblzma.a" ]]; then
         >&2 echo "Skipping build: lzma already built for $target_arch"
         return 0
     fi
@@ -163,8 +163,16 @@ function build_lzma() {
 
     >&2 fancy_title "Building liblzma for $target_arch"
 
+    # Make sure configure exists by running autogen.sh
+    (
+        cd .. && ./autogen.sh 1>&2
+    )
+
+    # lzma's autoconf contains a bug, it's instal prefix is relative
+    # to the current build directory.
+    # Hence, we set the prefix here to "/" instead of realpath . .
     ../configure --enable-static "CC=$CC" "CXX=$CXX" "--host=$HOST" \
-        "CFLAGS=$CFLAGS" "CXXFLAGS=$CXXFLAGS" 1>&2
+        "CFLAGS=$CFLAGS" "CXXFLAGS=$CXXFLAGS" --prefix="/" 1>&2
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -697,7 +705,7 @@ function build_gdb_with_dependencies() {
 
     build_and_install_gdb "$packages_dir/binutils-gdb" \
                           "$iconv_build_dir" \
-                          "$lzma_build_dir/usr/local/" \
+                          "$lzma_build_dir" \
                           "$gmp_build_dir" \
                           "$mpfr_build_dir" \
                           "$with_python" \
