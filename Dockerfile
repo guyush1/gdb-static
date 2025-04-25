@@ -1,8 +1,6 @@
 FROM ubuntu:24.04
 
-RUN apt update
-
-RUN apt install -y \
+RUN apt update && apt install -y \
     binutils-multiarch \
     bison \
     file \
@@ -27,14 +25,11 @@ RUN apt install -y \
     pkg-config \
     python3.12 \
     python3-pip \
+    python3-requests \
     libpython3-dev \
     texinfo \
     wget \
     xz-utils
-
-# Remove externally-managed constrainsts since we run inside a docker...
-RUN rm -f /usr/lib/python3.*/EXTERNALLY-MANAGED
-RUN python3.12 -m pip install requests
 
 COPY src/docker_utils/download_musl_toolchains.py .
 RUN python3.12 -u download_musl_toolchains.py
