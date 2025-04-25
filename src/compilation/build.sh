@@ -277,7 +277,8 @@ function build_ncurses() {
     >&2 fancy_title "Building libncursesw for $target_arch"
 
     ../configure --enable-static "CC=$CC" "CXX=$CXX" "--host=$HOST" \
-        "CFLAGS=$CFLAGS" "CXXFLAGS=$CXXFLAGS" --prefix="$ncurses_install_dir" "--enable-widec" 1>&2
+        "CFLAGS=$CFLAGS" "CXXFLAGS=$CXXFLAGS" "--enable-widec" \
+        --prefix="$ncurses_install_dir" --with-default-terminfo-dir="/usr/share/terminfo"  1>&2
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -287,7 +288,9 @@ function build_ncurses() {
         return 1
     fi
 
-    make -j$(nproc) install 1>&2
+    # Install the include & library dirs, but not the terminfo database.
+    # The user is responsible for supplying the terminal database.
+    make -j$(nproc) install.includes install.libs 1>&2
     if [[ $? -ne 0 ]]; then
         return 1
     fi
