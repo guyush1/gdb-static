@@ -35,13 +35,16 @@ def extract_tarball(filename: str, dst: Path):
     print(f"{filename} extracted")
 
 def add_to_path(curr_path: str, package_path: Path):
-    return curr_path + ":" + str((package_path / "bin").resolve())
+    new_path = str((package_path / "bin").resolve())
+    if curr_path != "":
+        return new_path + ":" + curr_path
+    return new_path
 
 
 def main():
     os.mkdir(MUSL_TOOLCHAINS_DIR)
 
-    updated_path = "$PATH"
+    updated_path = ""
     for arch, url in ARCHS.items():
         filename = url.split("/")[-1]
         download_file(url, filename)
@@ -64,7 +67,7 @@ def main():
     with open(ENTRYPOINT, mode="w") as f:
         f.write(
 f"""#!/usr/bin/env bash
-export PATH="{updated_path}"
+export PATH="$PATH:{updated_path}"
 exec "$@"
 """)
 
@@ -73,7 +76,7 @@ exec "$@"
 
     # Append the path to bash.bashrc so that other users will have these paths.
     with open("/etc/bash.bashrc", mode="a") as f:
-        f.write(f"\nexport PATH=\"{updated_path}\"")
+        f.write(f"\nexport PATH=\"$PATH:{updated_path}\"")
 
 
 if __name__ == "__main__":
