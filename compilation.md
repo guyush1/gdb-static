@@ -14,13 +14,15 @@ Please note that when specifying a compilation dir throughout the compilation pr
 Instead, always use absolute paths.
 
 Examples to the <VARIABLES> throughout the script:
-- <CROSS_COMPILER_C> - arm-linux-gnueabi-gcc
-- <CROSS_COMPILER_CPP> - arm-linux-gnueabi-g++
-- <HOST_NAME> - arm-linux-gnueabi
+- <CROSS_COMPILER_C> - arm-linux-musleabi-gcc
+- <CROSS_COMPILER_CPP> - arm-linux-musleabi-g++
+- <HOST_NAME> - arm-linux-musleabi
 - <COMPILATION_DIR_PATH> - /home/username/projects/libgmp-x.y.z/build-arm/
 
-Environment info:
-- glibc version: 2.39-0ubuntu8.3 (NOTE: When i compiled gdb using an older glibc, such as the one i had in my ubuntu-20.04 machine, i received a segfault in gdb, so the libc version is important!).
+## Choosing the right compiler
+
+It is recommended to use a musl-based compiler. Unlike glibc, musl is not dependant on your distribution.
+Using regular gcc that is glibc based should work most of the time, but we had some people reporting crashes mainly in gdbserver, so we switched to musl-based toolchains.
 
 # Compiling gdb statically to the host platform
 
