@@ -1,12 +1,17 @@
 ARCHS := x86_64 arm aarch64 powerpc mips mipsel
+GDB_BFD_ARCHS := $(shell echo $(ARCHS) | awk '{for(i=1;i<=NF;i++) $$i=$$i"-linux"; print}' OFS=,)
 
-TARGETS := $(addprefix build-, $(ARCHS))
-PYTHON_TARGETS := $(addprefix build-with-python-, $(ARCHS))
-ALL_TARGETS := $(TARGETS) $(PYTHON_TARGETS)
+BASE_TARGETS := $(addprefix build-, $(ARCHS))
 
-PACK_TARGETS := $(addprefix pack-, $(ARCHS))
-PYTHON_PACK_TARGETS := $(addprefix pack-with-python-, $(ARCHS))
-ALL_PACK_TARGETS := $(PACK_TARGETS) $(PYTHON_PACK_TARGETS)
+SLIM_TARGETS := $(addsuffix -slim, $(BASE_TARGETS))
+FULL_TARGETS := $(addsuffix -full, $(BASE_TARGETS))
+ALL_TARGETS := $(SLIM_TARGETS) $(FULL_TARGETS)
+
+BASE_PACK_TARGETS := $(addprefix pack-, $(ARCHS))
+
+FULL_PACK_TARGETS := $(addsuffix -full, $(BASE_PACK_TARGETS))
+SLIM_PACK_TARGETS := $(addsuffix -slim, $(BASE_PACK_TARGETS))
+ALL_PACK_TARGETS := $(SLIM_PACK_TARGETS) $(FULL_PACK_TARGETS)
 
 SUBMODULE_PACKAGES := $(wildcard src/submodule_packages/*)
 BUILD_PACKAGES_DIR := "build/packages"
@@ -55,29 +60,29 @@ download-packages: build/download-packages.stamp
 
 build: $(ALL_TARGETS)
 
-$(TARGETS): build-%:
-	@$(MAKE) _build-$*
+$(SLIM_TARGETS): build-%-slim:
+	@BUILD_TYPE="slim" $(MAKE) _build-$*
 
-$(PYTHON_TARGETS): build-with-python-%:
-	@WITH_PYTHON="--with-python" $(MAKE) _build-$*
+$(FULL_TARGETS): build-%-full:
+	@BUILD_TYPE="full" GDB_BFD_ARCHS=$(GDB_BFD_ARCHS) $(MAKE) _build-$*
 
 _build-%: symlink-git-packages download-packages build-docker-image
 	mkdir -p build
 	docker run $(TTY_ARG) --user $(shell id -u):$(shell id -g) \
 		--rm --volume .:/app/gdb gdb-static env TERM=xterm-256color \
-		/app/gdb/src/compilation/build.sh $* /app/gdb/build/ /app/gdb/src $(WITH_PYTHON)
+		/app/gdb/src/compilation/build.sh $* /app/gdb/build/ /app/gdb/src $(BUILD_TYPE) $(GDB_BFD_ARCHS)
 
 pack: $(ALL_PACK_TARGETS)
 
-$(PACK_TARGETS): pack-%:
-	@$(MAKE) _pack-$*
+$(SLIM_PACK_TARGETS): pack-%-slim:
+	@BUILD_TYPE="slim" $(MAKE) _pack-$*
 
-$(PYTHON_PACK_TARGETS): pack-with-python-%:
-	@TAR_EXT="with-python-" ARTIFACT_EXT="_with_python" $(MAKE) _pack-$*
+$(FULL_PACK_TARGETS): pack-%-full:
+	@BUILD_TYPE="full" $(MAKE) _pack-$*
 
-_pack-%: build-%
-	if [ ! -f "build/artifacts/gdb-static-$(TAR_EXT)$*.tar.gz" ]; then \
-		tar -czf "build/artifacts/gdb-static-$(TAR_EXT)$*.tar.gz" -C "build/artifacts/$*$(ARTIFACT_EXT)" .; \
+_pack-%: build-%-$(BUILD_TYPE)
+	if [ ! -f "build/artifacts/gdb-static-$(BUILD_TYPE)-$*.tar.gz" ]; then \
+		tar -czf "build/artifacts/gdb-static-$(BUILD_TYPE)-$*.tar.gz" -C "build/artifacts/$*_$(BUILD_TYPE)" .; \
 	fi
 
 clean-git-packages:

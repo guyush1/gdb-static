@@ -3,6 +3,7 @@
 # Include utils library
 script_dir=$(dirname "$0")
 source "$script_dir/utils.sh"
+source "$script_dir/full_build_conf.sh"
 
 # Don't want random unknown things to fail in the build procecss!
 set -e
@@ -50,14 +51,34 @@ function set_compliation_variables() {
     export CC="${CROSS}gcc"
     export CXX="${CROSS}g++"
 
-    export CFLAGS="-O2"
-    export CXXFLAGS="-O2"
+    export CFLAGS="-Os"
+    export CXXFLAGS="-Os"
 
     # Strip the binary to reduce it's size.
     export LDFLAGS="-s"
 }
 
-function set_up_lib_search_paths() {
+function set_up_lib_search_path() {
+    # Set up library-related linker search paths.
+    #
+    # Parameters:
+    # $1: library install dir
+    # $2: whether to add linker search path or not (include path is always added).
+    local lib_install_dir="$1"
+    local add_linker_include_path="$2"
+
+    if [[ $add_linker_include_path == 1 ]]; then
+        # Add library to the linker's include path.
+        export LDFLAGS="-L$lib_install_dir/lib $LDFLAGS"
+    fi
+
+    # Add library standard headers to the CC / CXX flags.
+    local include_paths="-I$lib_install_dir/include"
+    export CC="$CC $include_paths"
+    export CXX="$CXX $include_paths"
+}
+
+function set_up_base_lib_search_paths() {
     # Set up library-related linker search paths.
     #
     # Parameters:
@@ -65,21 +86,18 @@ function set_up_lib_search_paths() {
     # $2: gmp build dir
     # $3: mpfr build dir
     # $4: ncursesw build dir
-    # $5: libexpat build dir
+    # $5: expat build dir
     local iconv_build_dir="$1"
     local gmp_build_dir="$2"
     local mpfr_build_dir="$3"
     local ncursesw_build_dir="$4"
-    local libexpat_build_dir="$5"
+    local expat_build_dir="$5"
 
-    # I) Allow tui mode by adding our custom built static ncursesw library to the linker search path.
-    # II) Allow parsing xml files by adding libexpat library to the linker search path.
-    export LDFLAGS="-L$ncursesw_build_dir/lib -L$libexpat_build_dir/lib/ $LDFLAGS"
-
-    # Add library standard headers to the CC / CXX flags.
-    export INCLUDE_PATHS="-I$iconv_build_dir/include -I$gmp_build_dir/include -I$mpfr_build_dir/include -I$ncursesw_build_dir/include -I$libexpat_build_dir/include"
-    export CC="$CC $INCLUDE_PATHS"
-    export CXX="$CXX $INCLUDE_PATHS"
+    set_up_lib_search_path $iconv_build_dir 0
+    set_up_lib_search_path $gmp_build_dir 0
+    set_up_lib_search_path $mpfr_build_dir 0
+    set_up_lib_search_path $ncursesw_build_dir 1
+    set_up_lib_search_path $expat_build_dir 1
 }
 
 function build_iconv() {
@@ -489,10 +507,11 @@ function build_gdb() {
     # $1: gdb directory
     # $2: target architecture
     # $3: libiconv prefix
-    # $4: liblzma prefix
-    # $5: libgmp prefix
-    # $6: libmpfr prefix
-    # $7: whether to build with python or not
+    # $4: libgmp prefix
+    # $5: libmpfr prefix
+    # $6: liblzma prefix
+    # $7: whether to build gdb with all extra configurations specified in src/compilation/full_build_conf.sh
+    # $8: gdb cross-architecture binary format support formats (relevant for full builds only).
     #
     # Echoes:
     # The gdb build directory
@@ -504,17 +523,28 @@ function build_gdb() {
     local gdb_dir="$1"
     local target_arch="$2"
     local libiconv_prefix="$3"
-    local liblzma_prefix="$4"
-    local libgmp_prefix="$5"
-    local libmpfr_prefix="$6"
-    local with_python="$7"
+    local libgmp_prefix="$4"
+    local libmpfr_prefix="$5"
+    local liblzma_prefix="$6"
+    local full_build="$7"
+    local gdb_bfd_archs="$8"
 
-    if [[ "$with_python" == "yes" ]]; then
-        local python_flag="--with-python=/app/gdb/build/packages/cpython-static/build-$target_arch/bin/python3-config"
-        local gdb_build_dir="$(realpath "$gdb_dir/build-${target_arch}_with_python")"
+    local extra_flags=()
+    if [[ "$full_build" == "yes" ]]; then
+        if [[ $full_build_supported_targets -eq 1 ]]; then
+            extra_flags+=("--enable-targets=$gdb_bfd_archs" "--enable-64-bit-bfd")
+        fi
+
+        if [[ $full_build_python_support -eq 1 ]]; then
+            extra_flags+=("--with-python=/app/gdb/build/packages/cpython-static/build-$target_arch/bin/python3-config")
+        else
+            extra_flags+=("--without-python")
+        fi
+
+        local gdb_build_dir="$(realpath "$gdb_dir/build-${target_arch}_full")"
     else
-        local python_flag="--without-python"
-        local gdb_build_dir="$(realpath "$gdb_dir/build-${target_arch}")"
+        extra_flags+=("--without-python")
+        local gdb_build_dir="$(realpath "$gdb_dir/build-${target_arch}_slim")"
     fi
 
     echo "$gdb_build_dir"
@@ -530,16 +560,16 @@ function build_gdb() {
     >&2 fancy_title "Building gdb for $target_arch"
 
     ../configure --enable-static --with-static-standard-libraries --disable-inprocess-agent \
-                 --enable-targets=all --enable-64-bit-bfd \
-                 --enable-tui "$python_flag" \
-                 --with-expat --with-libexpat-type="static" \
                  --with-gdb-datadir="/usr/share/gdb" --with-separate-debug-dir="/usr/lib/debug" \
                  --with-system-gdbinit="/etc/gdb/gdbinit" --with-system-gdbinit-dir="/etc/gdb/gdbinit.d" \
                  --with-jit-reader-dir="/usr/lib/gdb" \
-                 "--with-libiconv-prefix=$libiconv_prefix" --with-libiconv-type=static \
-                 "--with-liblzma-prefix=$liblzma_prefix" --with-liblzma-type=static --with-lzma=yes \
-                 "--with-gmp=$libgmp_prefix" \
-                 "--with-mpfr=$libmpfr_prefix" \
+                 --with-libiconv-prefix="$libiconv_prefix" --with-libiconv-type=static \
+                 --with-gmp="$libgmp_prefix" \
+                 --with-mpfr="$libmpfr_prefix" \
+                 --enable-tui \
+                 --with-expat --with-libexpat-type=static \
+                 --with-lzma=yes --with-liblzma-prefix="$liblzma_prefix" --with-liblzma-type="static" \
+                 "${extra_flags[@]}" \
                  "CC=$CC" "CXX=$CXX" "LDFLAGS=$LDFLAGS" "--host=$HOST" \
                  "CFLAGS=$CFLAGS" "CXXFLAGS=$CXXFLAGS" 1>&2
     if [[ $? -ne 0 ]]; then
@@ -563,7 +593,7 @@ function install_gdb() {
     # $1: gdb build directory
     # $2: artifacts directory
     # $3: target architecture
-    # $4: whether gdb was built with or without python
+    # $4: whether to build gdb with all extra configurations specified in src/compilation/full_build_conf.sh
     #
     # Returns:
     # 0: success
@@ -572,12 +602,12 @@ function install_gdb() {
     local gdb_build_dir="$1"
     local artifacts_dir="$2"
     local target_arch="$3"
-    local with_python="$4"
+    local full_build="$4"
 
-    if [[ "$with_python" == "yes" ]]; then
-        local artifacts_location="$artifacts_dir/${target_arch}_with_python"
+    if [[ "$full_build" == "yes" ]]; then
+        local artifacts_location="$artifacts_dir/${target_arch}_full"
     else
-        local artifacts_location="$artifacts_dir/${target_arch}"
+        local artifacts_location="$artifacts_dir/${target_arch}_slim"
     fi
 
     if [[ -d "$artifacts_location" && -n "$(ls -A "$artifacts_location")" ]]; then
@@ -608,12 +638,13 @@ function build_and_install_gdb() {
     # Parameters:
     # $1: gdb package directory
     # $2: libiconv prefix
-    # $3: liblzma prefix
-    # $4: libgmp prefix
-    # $5: libmpfr prefix
-    # $6: whether to build with python or not
-    # $7: install directory
-    # $8: target architecture
+    # $3: libgmp prefix
+    # $4: libmpfr prefix
+    # $5: liblzma prefix.
+    # $6: whether to build gdb with all extra configurations specified in src/compilation/full_build_conf.sh
+    # $7: gdb cross-architecture binary format support formats (relevant for full builds only).
+    # $8: install directory
+    # $9: target architecture
     #
     # Returns:
     # 0: success
@@ -621,19 +652,20 @@ function build_and_install_gdb() {
 
     local gdb_dir="$1"
     local libiconv_prefix="$2"
-    local liblzma_prefix="$3"
-    local libgmp_prefix="$4"
-    local libmpfr_prefix="$5"
-    local with_python="$6"
-    local artifacts_dir="$7"
-    local target_arch="$8"
+    local libgmp_prefix="$3"
+    local libmpfr_prefix="$4"
+    local liblzma_prefix="$5"
+    local full_build="$6"
+    local gdb_bfd_archs="$7"
+    local artifacts_dir="$8"
+    local target_arch="$9"
 
-    gdb_build_dir="$(build_gdb "$gdb_dir" "$target_arch" "$libiconv_prefix" "$liblzma_prefix" "$libgmp_prefix" "$libmpfr_prefix" "$with_python")"
+    gdb_build_dir="$(build_gdb "$gdb_dir" "$target_arch" "$libiconv_prefix" "$libgmp_prefix" "$libmpfr_prefix" "$liblzma_prefix" "$full_build" "$gdb_bfd_archs")"
     if [[ $? -ne 0 ]]; then
         return 1
     fi
 
-    install_gdb "$gdb_build_dir" "$artifacts_dir" "$target_arch" "$with_python"
+    install_gdb "$gdb_build_dir" "$artifacts_dir" "$target_arch" "$full_build"
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -646,12 +678,14 @@ function build_gdb_with_dependencies() {
     # $1: target architecture
     # $2: build directory
     # $3: src directory
-    # $4: whether to build gdb with python or not
+    # $4: whether to build gdb with all extra configurations specified in src/compilation/full_build_conf.sh
+    # $5: gdb cross-architecture binary format support formats (relevant for full builds only).
 
     local target_arch="$1"
     local build_dir="$2"
     local source_dir="$3"
-    local with_python="$4"
+    local full_build="$4"
+    local gdb_bfd_archs="$5"
     local packages_dir="$build_dir/packages"
     local artifacts_dir="$build_dir/artifacts"
 
@@ -663,11 +697,6 @@ function build_gdb_with_dependencies() {
     mkdir -p "$packages_dir"
 
     iconv_build_dir="$(build_iconv "$packages_dir/libiconv" "$target_arch")"
-    if [[ $? -ne 0 ]]; then
-        return 1
-    fi
-
-    lzma_build_dir="$(build_lzma "$packages_dir/xz" "$target_arch")"
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -692,13 +721,19 @@ function build_gdb_with_dependencies() {
         return 1
     fi
 
-    set_up_lib_search_paths "$iconv_build_dir" \
-                            "$gmp_build_dir" \
-                            "$mpfr_build_dir" \
-                            "$ncursesw_build_dir" \
-                            "$libexpat_build_dir"
+    lzma_build_dir="$(build_lzma "$packages_dir/xz" "$target_arch")"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi 
 
-    if [[ "$with_python" == "yes" ]]; then
+    set_up_base_lib_search_paths "$iconv_build_dir" \
+                                 "$gmp_build_dir" \
+                                 "$mpfr_build_dir" \
+                                 "$ncursesw_build_dir" \
+                                 "$libexpat_build_dir"
+
+    # Optional build components
+    if [[ $full_build == "yes" && $full_build_python_support -eq 1 ]]; then
         local gdb_python_dir="$packages_dir/binutils-gdb/gdb/python/lib/"
         local pygments_source_dir="$packages_dir/pygments/"
         local python_build_dir="$(build_python "$packages_dir/cpython-static" "$target_arch" "$gdb_python_dir" "$pygments_source_dir")"
@@ -709,10 +744,11 @@ function build_gdb_with_dependencies() {
 
     build_and_install_gdb "$packages_dir/binutils-gdb" \
                           "$iconv_build_dir" \
-                          "$lzma_build_dir" \
                           "$gmp_build_dir" \
                           "$mpfr_build_dir" \
-                          "$with_python" \
+                          "$lzma_build_dir" \
+                          "$full_build" \
+                          "$gdb_bfd_archs" \
                           "$artifacts_dir" \
                           "$target_arch"
     if [[ $? -ne 0 ]]; then
@@ -721,17 +757,19 @@ function build_gdb_with_dependencies() {
 }
 
 function main() {
-    if [[ $# -lt 3 ]]; then
-        >&2 echo "Usage: $0 <target_arch> <build_dir> <src_dir> [--with-python]"
+    if [[ $# -lt 4 ]]; then
+        >&2 echo "Usage: $0 <target_arch> <build_dir> <src_dir> <slim/full> [gdb-bfd-archs]"
         exit 1
     fi
 
-    local with_python="no"
-    if [[ "$4" == "--with-python" ]]; then
-        with_python="yes"
+    local full_build="no"
+    if [[ "$4" == "full" ]]; then
+        full_build="yes"
+    else
+        full_build="no"
     fi
 
-    build_gdb_with_dependencies "$1" "$2" "$3" "$with_python"
+    build_gdb_with_dependencies "$1" "$2" "$3" "$full_build" "$5"
     if [[ $? -ne 0 ]]; then
         >&2 echo "Error: failed to build gdb with dependencies"
         exit 1
