@@ -44,6 +44,7 @@ This is where `gdb-static` comes in! We provide static builds of `gdb` (and `gdb
 </summary> <br />
 
 - **Static Builds**: No dependencies, no installation, just download and run!
+- **Musl Based**: We use Musl in order to create distribution-independant binaries that can work anywhere.
 - **Latest Versions**: We keep our builds up-to-date with the latest versions of GDB.
 - **Builtin Python (Optional)**: We provide builds with Python support built-in.
 - **XML Support**: Our builds come with XML support built-in, which is useful for some GDB commands.

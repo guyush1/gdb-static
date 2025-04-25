@@ -12,3 +12,6 @@
 [submodule "src/submodule_packages/libexpat"]
 	path = src/submodule_packages/libexpat
 	url = git@github.com:guyush1/libexpat.git
+[submodule "xz"]
+	path = src/submodule_packages/xz
+	url = https://github.com/tukaani-project/xz.git
