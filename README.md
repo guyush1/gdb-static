@@ -64,8 +64,10 @@ To get started with `gdb-static`, simply download the build for your architectur
 
 > [!NOTE]
 > We provide two types of builds:
-> 1. Builds with Python support, which are approximately ~30 MB in size.
-> 2. Slimmer builds without Python support, which are approximately ~7 MB in size.
+> 1. Full builds with Python support && cross-architecture debugging, ~70MB in size.
+> 2. Slim builds, which are approximately ~10 MB in size.
+>
+> Full builds are modular - you can edit full_build_conf.sh to disable parts of the full builds.
 
 You may choose to copy the `gdb` binary to the platform, or use `gdbserver` to debug remotely.
 
@@ -97,10 +99,10 @@ Building for a specific architecture
 To build `gdb-static` for a specific architecture, run the following command:
 
 ```bash
-make build[-with-python]-<ARCH>
+make build-<ARCH>-[slim/full]
 ```
 
-Where `<ARCH>` is the architecture you want to build for, and `-with-python` may be added in order to compile gdb with Python support.
+Where `<ARCH>` is the architecture you want to build for, and `slim/full` determines the build type (see note about builds above).
 
 The resulting binary will be placed in the `build/artifacts/` directory:
 
