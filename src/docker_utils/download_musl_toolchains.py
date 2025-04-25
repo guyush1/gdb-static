@@ -1,11 +1,15 @@
 #!/usr/bin/env python3.12
 
-import requests
+from typing import List
+from pathlib import Path
+
 import tarfile
+import tempfile
 import os
 import shutil
+import asyncio
 
-from pathlib import Path
+import aiohttp
 
 ARCHS = {
     "x86_64" : "https://more.musl.cc/11/x86_64-linux-musl/x86_64-linux-musl-cross.tgz",
@@ -17,22 +21,34 @@ ARCHS = {
 }
 CHUNK_SIZE = 65536
 MUSL_TOOLCHAINS_DIR = Path("/musl-toolchains")
-ENTRYPOINT = "/entrypoint.sh"
+ENTRYPOINT = Path("/entrypoint.sh")
 
-def download_file(url: str, filename: str):
-    print(f"Downloading {filename}")
-    with requests.get(url, stream=True) as r:
-        r.raise_for_status()
-        with open(filename, "wb") as f:
-            for chunk in r.iter_content(chunk_size=CHUNK_SIZE):
-                f.write(chunk)
-    print(f"{filename} downloaded.")
+async def download_file(url: str, filename: str):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            with open(filename, 'wb') as f:
+                async for data in response.content.iter_chunked(CHUNK_SIZE):
+                    f.write(data)
 
-def extract_tarball(filename: str, dst: Path):
-    print(f"Extracting {filename}")
-    with tarfile.open(filename, "r:gz") as tar:
+def extract_tarfile(filename: str, dst: Path):
+    with tarfile.open(filename, "r") as tar:
         tar.extractall(path=dst)
-    print(f"{filename} extracted")
+
+async def download_tarfile(tar_url: str, extraction_dir: Path):
+    with tempfile.NamedTemporaryFile() as named_tempfile:
+        await download_file(tar_url, named_tempfile.name)
+
+        # Tarfile extraction is still being done synchronously.
+        extract_tarfile(named_tempfile.name, extraction_dir)
+
+    print(f"Downloaded & Extracted: {tar_url!r}")
+
+async def download_archs() -> List[str]:
+    print(f"Downloading toolchains for architectures: {', '.join(ARCHS.keys())}")
+
+    async with asyncio.TaskGroup() as tg:
+        for url in ARCHS.values():
+            tg.create_task(download_tarfile(url, MUSL_TOOLCHAINS_DIR))
 
 def add_to_path(curr_path: str, package_path: Path):
     new_path = str((package_path / "bin").resolve())
@@ -40,16 +56,14 @@ def add_to_path(curr_path: str, package_path: Path):
         return new_path + ":" + curr_path
     return new_path
 
-
 def main():
     os.mkdir(MUSL_TOOLCHAINS_DIR)
 
-    updated_path = ""
-    for arch, url in ARCHS.items():
-        filename = url.split("/")[-1]
-        download_file(url, filename)
-        extract_tarball(filename, MUSL_TOOLCHAINS_DIR)
-        updated_path = add_to_path(updated_path, MUSL_TOOLCHAINS_DIR / filename.removesuffix(".tgz"))
+    asyncio.run(download_archs())
+
+    updated_path = "$PATH"
+    for musl_arch_dir in os.scandir(MUSL_TOOLCHAINS_DIR):
+        updated_path = add_to_path(updated_path, Path(musl_arch_dir.path))
 
     # Fix the x86_64 dynamic loader if needed:
     # Unfortunately, the internal gdb build scripts builds some binaries (that generate documentation)

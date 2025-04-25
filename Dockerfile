@@ -25,7 +25,7 @@ RUN apt update && apt install -y \
     patch \
     pkg-config \
     python3.12 \
-    python3-requests \
+    python3-aiohttp \
     libpython3-dev \
     texinfo \
     wget \
