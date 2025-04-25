@@ -512,6 +512,7 @@ function build_gdb() {
     # $6: liblzma prefix
     # $7: whether to build gdb with all extra configurations specified in src/compilation/full_build_conf.sh
     # $8: gdb cross-architecture binary format support formats (relevant for full builds only).
+    # $9: the architecture we are compiling for.
     #
     # Echoes:
     # The gdb build directory
@@ -528,11 +529,12 @@ function build_gdb() {
     local liblzma_prefix="$6"
     local full_build="$7"
     local gdb_bfd_archs="$8"
+    local target_arch="$9"
 
     local extra_flags=()
     if [[ "$full_build" == "yes" ]]; then
-        if [[ $full_build_supported_targets -eq 1 ]]; then
-            extra_flags+=("--enable-targets=$gdb_bfd_archs" "--enable-64-bit-bfd")
+        if [[ $full_build_cross_arch_debugging -eq 1 ]]; then
+            extra_flags+=("--enable-targets=$gdb_bfd_archs" "--enable-64-bit-bfd" "--disable-sim")
         fi
 
         if [[ $full_build_python_support -eq 1 ]]; then
@@ -660,7 +662,7 @@ function build_and_install_gdb() {
     local artifacts_dir="$8"
     local target_arch="$9"
 
-    gdb_build_dir="$(build_gdb "$gdb_dir" "$target_arch" "$libiconv_prefix" "$libgmp_prefix" "$libmpfr_prefix" "$liblzma_prefix" "$full_build" "$gdb_bfd_archs")"
+    gdb_build_dir="$(build_gdb "$gdb_dir" "$target_arch" "$libiconv_prefix" "$libgmp_prefix" "$libmpfr_prefix" "$liblzma_prefix" "$full_build" "$gdb_bfd_archs" "$target_arch")"
     if [[ $? -ne 0 ]]; then
         return 1
     fi

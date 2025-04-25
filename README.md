@@ -64,7 +64,7 @@ To get started with `gdb-static`, simply download the build for your architectur
 
 > [!NOTE]
 > We provide two types of builds:
-> 1. Full builds with Python support && cross-architecture debugging, ~70MB in size.
+> 1. Full builds with Python support && cross-architecture debugging, ~70MB in size. Note that we disable the simulator feature in order to enable cross-architecture debugging (since not all targets have a simulator).
 > 2. Slim builds, which are approximately ~10 MB in size.
 >
 > Full builds are modular - you can edit full_build_conf.sh to disable parts of the full builds.
