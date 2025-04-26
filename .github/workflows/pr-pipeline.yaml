@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        build_type: ["build", "build-with-python"]
+        build_type: ["slim", "full"]
         architecture: ["x86_64", "arm", "aarch64", "powerpc", "mips", "mipsel"]
 
     runs-on: ubuntu-latest
@@ -25,4 +25,4 @@ jobs:
       run: sudo apt-get install -y wget
 
     - name: Build
-      run: make ${{ matrix.build_type }}-${{ matrix.architecture }} -j$((`nproc`+1))
+      run: make build-${{ matrix.architecture }}-${{ matrix.build_type }} -j$((`nproc`+1))
