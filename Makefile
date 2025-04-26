@@ -1,11 +1,11 @@
 ARCHS := x86_64 arm aarch64 powerpc mips mipsel
 GDB_BFD_ARCHS := $(shell echo $(ARCHS) | awk '{for(i=1;i<=NF;i++) $$i=$$i"-linux"; print}' OFS=,)
 
-BASE_TARGETS := $(addprefix build-, $(ARCHS))
+BASE_BUILD_TARGETS := $(addprefix build-, $(ARCHS))
 
-SLIM_TARGETS := $(addsuffix -slim, $(BASE_TARGETS))
-FULL_TARGETS := $(addsuffix -full, $(BASE_TARGETS))
-ALL_TARGETS := $(SLIM_TARGETS) $(FULL_TARGETS)
+SLIM_BUILD_TARGETS := $(addsuffix -slim, $(BASE_BUILD_TARGETS))
+FULL_BUILD_TARGETS := $(addsuffix -full, $(BASE_BUILD_TARGETS))
+ALL_BUILD_TARGETS := $(SLIM_BUILD_TARGETS) $(FULL_BUILD_TARGETS)
 
 BASE_PACK_TARGETS := $(addprefix pack-, $(ARCHS))
 
@@ -20,7 +20,7 @@ BUILD_PACKAGES_DIR := "build/packages"
 # This is disabled by the ci automation manually.
 TTY_ARG ?= -it
 
-.PHONY: clean help download_packages build build-docker-image $(ALL_TARGETS) $(ALL_PACK_TARGETS)
+.PHONY: clean help download_packages build build-docker-image $(ALL_BUILD_TARGETS) $(ALL_PACK_TARGETS)
 
 .NOTPARALLEL: build pack
 
@@ -29,7 +29,7 @@ help:
 	@echo "  make build"
 	@echo ""
 
-	@for target in $(ALL_TARGETS); do \
+	@for target in $(ALL_BUILD_TARGETS); do \
 		echo "  $$target"; \
 	done
 
@@ -58,12 +58,12 @@ symlink-git-packages: build/symlink-git-packages.stamp
 
 download-packages: build/download-packages.stamp
 
-build: $(ALL_TARGETS)
+build: $(ALL_BUILD_TARGETS)
 
-$(SLIM_TARGETS): build-%-slim:
+$(SLIM_BUILD_TARGETS): build-%-slim:
 	@BUILD_TYPE="slim" $(MAKE) _build-$*
 
-$(FULL_TARGETS): build-%-full:
+$(FULL_BUILD_TARGETS): build-%-full:
 	@BUILD_TYPE="full" GDB_BFD_ARCHS=$(GDB_BFD_ARCHS) $(MAKE) _build-$*
 
 _build-%: symlink-git-packages download-packages build-docker-image

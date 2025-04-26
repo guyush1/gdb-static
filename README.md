@@ -60,16 +60,21 @@ This is where `gdb-static` comes in! We provide static builds of `gdb` (and `gdb
 
 ## Usage 
 
-To get started with `gdb-static`, simply download the build for your architecture from the [releases page](https://github.com/guyush1/gdb-static/releases/latest), extract the archive, and copy the binary to your desired platform.
-
-> [!NOTE]
-> We provide two types of builds:
-> 1. Full builds with Python support && cross-architecture debugging, ~70MB in size. Note that we disable the simulator feature in order to enable cross-architecture debugging (since not all targets have a simulator).
-> 2. Slim builds, which are approximately ~10 MB in size.
->
-> Full builds are modular - you can edit full_build_conf.sh to disable parts of the full builds.
+To get started with `gdb-static`, simply download the build for your architecture from the [releases page](https://github.com/guyush1/gdb-static/releases/latest), extract the archive, and copy the binary to your desired platform. <br />
 
 You may choose to copy the `gdb` binary to the platform, or use `gdbserver` to debug remotely.
+
+## Build types
+
+We provide two types of builds:
+1. Slim builds, that contains most of the features, beside the ones mentioned below.
+2. Full builds that contains all of the slim build features, and also contains:
+   * Python support
+   * Cross-architecture debugging. <br />
+   Note that in order to enable cross-architecture debugging, we have to disable the simulator feature, since not all targets have a simulator.
+
+Slim builds are approximately ~10MB. Full builds are approximately ~70MB. <br />
+You can edit the full_build_conf.sh file to disable full build exclusive features. 
 
 ## Development
 
@@ -102,7 +107,7 @@ To build `gdb-static` for a specific architecture, run the following command:
 make build-<ARCH>-[slim/full]
 ```
 
-Where `<ARCH>` is the architecture you want to build for, and `slim/full` determines the build type (see note about builds above).
+Where `<ARCH>` is the architecture you want to build for, and `slim/full` determines the build type (see [here](#build-types)).
 
 The resulting binary will be placed in the `build/artifacts/` directory:
 

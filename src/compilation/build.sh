@@ -510,9 +510,8 @@ function build_gdb() {
     # $4: libgmp prefix
     # $5: libmpfr prefix
     # $6: liblzma prefix
-    # $7: whether to build gdb with all extra configurations specified in src/compilation/full_build_conf.sh
+    # $7: build mode: slim / full.
     # $8: gdb cross-architecture binary format support formats (relevant for full builds only).
-    # $9: the architecture we are compiling for.
     #
     # Echoes:
     # The gdb build directory
@@ -529,7 +528,6 @@ function build_gdb() {
     local liblzma_prefix="$6"
     local full_build="$7"
     local gdb_bfd_archs="$8"
-    local target_arch="$9"
 
     local extra_flags=()
     if [[ "$full_build" == "yes" ]]; then
@@ -543,10 +541,10 @@ function build_gdb() {
             extra_flags+=("--without-python")
         fi
 
-        local gdb_build_dir="$(realpath "$gdb_dir/build-${target_arch}_full")"
+        local gdb_build_dir="$(realpath "$gdb_dir/build-${target_arch}-full")"
     else
         extra_flags+=("--without-python")
-        local gdb_build_dir="$(realpath "$gdb_dir/build-${target_arch}_slim")"
+        local gdb_build_dir="$(realpath "$gdb_dir/build-${target_arch}-slim")"
     fi
 
     echo "$gdb_build_dir"
@@ -595,7 +593,7 @@ function install_gdb() {
     # $1: gdb build directory
     # $2: artifacts directory
     # $3: target architecture
-    # $4: whether to build gdb with all extra configurations specified in src/compilation/full_build_conf.sh
+    # $4: build mode: slim / full.
     #
     # Returns:
     # 0: success
@@ -643,7 +641,7 @@ function build_and_install_gdb() {
     # $3: libgmp prefix
     # $4: libmpfr prefix
     # $5: liblzma prefix.
-    # $6: whether to build gdb with all extra configurations specified in src/compilation/full_build_conf.sh
+    # $6: build mode: slim / full.
     # $7: gdb cross-architecture binary format support formats (relevant for full builds only).
     # $8: install directory
     # $9: target architecture
@@ -662,7 +660,7 @@ function build_and_install_gdb() {
     local artifacts_dir="$8"
     local target_arch="$9"
 
-    gdb_build_dir="$(build_gdb "$gdb_dir" "$target_arch" "$libiconv_prefix" "$libgmp_prefix" "$libmpfr_prefix" "$liblzma_prefix" "$full_build" "$gdb_bfd_archs" "$target_arch")"
+    gdb_build_dir="$(build_gdb "$gdb_dir" "$target_arch" "$libiconv_prefix" "$libgmp_prefix" "$libmpfr_prefix" "$liblzma_prefix" "$full_build" "$gdb_bfd_archs")"
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -680,7 +678,7 @@ function build_gdb_with_dependencies() {
     # $1: target architecture
     # $2: build directory
     # $3: src directory
-    # $4: whether to build gdb with all extra configurations specified in src/compilation/full_build_conf.sh
+    # $4: build mode: slim / full.
     # $5: gdb cross-architecture binary format support formats (relevant for full builds only).
 
     local target_arch="$1"
