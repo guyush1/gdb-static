@@ -23,12 +23,14 @@ copy
 copyreg
 cProfile
 csv
+<ctypes.**.*>
 dataclasses
 datetime
 <dbm.**.*>
 decimal
 difflib
 dis
+<email.**.*>
 <encodings.**.*>
 <ensurepip.**.*>
 enum
@@ -49,6 +51,7 @@ gzip
 hashlib
 heapq
 hmac
+<http.**.*>
 imaplib
 <importlib.**.*>
 inspect
@@ -133,6 +136,7 @@ trace
 tty
 types
 typing
+<urllib.**.*>
 uuid
 warnings
 wave
@@ -143,6 +147,3 @@ webbrowser
 zipapp
 <zipfile.**.*>
 <zoneinfo.**.*>
-<email.**.*>
-<urllib.**.*>
-<ctypes.**.*>
