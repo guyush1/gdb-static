@@ -373,6 +373,100 @@ function build_libexpat() {
     popd > /dev/null
 }
 
+function build_libffi() {
+    # Build libffi, for the ctypes python module.
+    #
+    # Parameters:
+    # $1: libffi package directory
+    # $2: Target architecture
+    local libffi_dir="$1"
+    local target_arch="$2"
+
+    pushd "${libffi_dir}" > /dev/null
+
+    local libffi_build_dir="$(realpath "$libffi_dir/build-$target_arch")"
+
+    # libffi needs a custom install dir due to it's non-standard compilation directories.
+    local libffi_install_dir="$libffi_build_dir/output"
+    echo "${libffi_install_dir}"
+
+    # Creates both the installation and build dirs because install is in build.
+    mkdir -p "${libffi_install_dir}"
+
+    if [[ -f "$libffi_install_dir/lib/libffi.a" ]]; then
+        >&2 echo "Skipping build: libffi already built for $target_arch"
+        return 0
+    fi
+
+    >&2 ./autogen.sh
+    pushd "${libffi_build_dir}" > /dev/null
+
+    >&2 fancy_title "Building libffi for $target_arch"
+
+    >&2 CFLAGS="${CFLAGS} -DNO_JAVA_RAW_API" ../configure \
+        --enable-silent-rules \
+        --enable-static \
+        --disable-shared \
+        --disable-docs \
+        --prefix="${libffi_install_dir}"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    >&2 make -j$(nproc)
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    >&2 make -j$(nproc) install
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    >&2 fancy_title "Finished building libffi for $target_arch"
+
+    popd > /dev/null
+    popd > /dev/null
+}
+
+function add_to_pkg_config_path() {
+    # This method add directories to the list that pkg-config looks for .pc (package config) files
+    # when finding the correct flags for modules.
+    #
+    # Parameters:
+    # $1: The directory to add to the package-config path.
+    local new_pkg_config_dir="${1}"
+
+    if [[ -n "${PKG_CONFIG_PATH}" ]]; then
+        export PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:${new_pkg_config_dir}"
+    else
+        export PKG_CONFIG_PATH="${new_pkg_config_dir}"
+    fi
+}
+
+function setup_libffi_env() {
+    # We need a valid pkg-config file for libffi in order for Python to recognize the package and
+    # know that it exists. Because we a pkg-config file, we might as well use it in order to ensure
+    # that we get the correct flags instead of manually typing them.
+    # Becuase of this, the setup of libffi isn't done in set_up_lib_search_path, as we don't need it.
+    #
+    # Parameters:
+    # $1: Libffi installation dir
+    local libffi_install_dir="$1"
+
+    # Needed because this is how Python recognizes the available packages.
+    add_to_pkg_config_path "${libffi_install_dir}/lib/pkgconfig/"
+
+    # If we have a pc file, might as well use it.
+    local libffi_cflags="$(pkg-config --cflags libffi)"
+    local libffi_libs="$(pkg-config --libs --static libffi)"
+
+    export CC="${CC} ${libffi_cflags}"
+    export CXX="${CXX} ${libffi_cflags}"
+
+    export LDFLAGS="${libffi_libs} ${LDFLAGS}"
+}
+
 function build_python() {
     # Build python.
     #
@@ -428,10 +522,17 @@ function build_python() {
     # Regenerate frozen modules with gdb env varaible. Do it after the configure because we need
     # the `regen-frozen` makefile.
     >&2 python3.12 ../Tools/build/freeze_modules.py
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
     >&2 make regen-frozen
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
 
     # Build python after configuring the project and regnerating frozen files.
-    >&2 make -j $(nproc)
+    >&2 make -j$(nproc)
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -734,6 +835,9 @@ function build_gdb_with_dependencies() {
 
     # Optional build components
     if [[ $full_build == "yes" && $full_build_python_support -eq 1 ]]; then
+        local libffi_install_dir="$(build_libffi "${packages_dir}/libffi" "${target_arch}")"
+        setup_libffi_env "${libffi_install_dir}"
+
         local gdb_python_dir="$packages_dir/binutils-gdb/gdb/python/lib/"
         local pygments_source_dir="$packages_dir/pygments/"
         local python_build_dir="$(build_python "$packages_dir/cpython-static" "$target_arch" "$gdb_python_dir" "$pygments_source_dir")"

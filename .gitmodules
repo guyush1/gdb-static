@@ -15,3 +15,6 @@
 [submodule "xz"]
 	path = src/submodule_packages/xz
 	url = https://github.com/tukaani-project/xz.git
+[submodule "src/submodule_packages/libffi"]
+	path = src/submodule_packages/libffi
+	url = git@github.com:libffi/libffi.git

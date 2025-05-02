@@ -145,3 +145,4 @@ zipapp
 <zoneinfo.**.*>
 <email.**.*>
 <urllib.**.*>
+<ctypes.**.*>

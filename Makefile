@@ -86,7 +86,7 @@ _pack-%: build-%-$(BUILD_TYPE)
 	fi
 
 clean-git-packages:
-	git submodule foreach '[[ ! "$$sm_path" == src/submodule_packages/* ]] || git clean -xffd'
+	git submodule foreach '[[ "$$sm_path" == src/submodule_packages/* ]] && git clean -xffd && git restore .'
 
 clean: clean-git-packages
 	rm -rf build
