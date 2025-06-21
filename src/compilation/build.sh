@@ -8,7 +8,7 @@ source "$script_dir/full_build_conf.sh"
 # Don't want random unknown things to fail in the build procecss!
 set -e
 
-function set_compliation_variables() {
+function set_compilation_variables() {
     # Set compilation variables such as which compiler to use.
     #
     # Parameters:
@@ -29,24 +29,20 @@ function set_compliation_variables() {
     >&2 fancy_title "Setting compilation variables for $target_arch"
 
     if [[ "$target_arch" == "arm" ]]; then
-        CROSS=arm-linux-musleabi-
         export HOST=arm-linux-musleabi
     elif [[ "$target_arch" == "aarch64" ]]; then
-        CROSS=aarch64-linux-musl-
         export HOST=aarch64-linux-musl
     elif [[ "$target_arch" == "powerpc" ]]; then
-        CROSS=powerpc-linux-musl-
         export HOST=powerpc-linux-musl
     elif [[ "$target_arch" == "mips" ]]; then
-        CROSS=mips-linux-musl-
         export HOST=mips-linux-musl
     elif [[ "$target_arch" == "mipsel" ]]; then
-        CROSS=mipsel-linux-musl-
         export HOST=mipsel-linux-musl
     elif [[ "$target_arch" == "x86_64" ]]; then
-        CROSS=x86_64-linux-musl-
         export HOST=x86_64-linux-musl
     fi
+
+    CROSS="${HOST}-"
 
     export CC="${CROSS}gcc"
     export CXX="${CROSS}g++"
@@ -790,7 +786,7 @@ function build_gdb_with_dependencies() {
     local packages_dir="$build_dir/packages"
     local artifacts_dir="$build_dir/artifacts"
 
-    set_compliation_variables "$target_arch"
+    set_compilation_variables "$target_arch"
     if [[ $? -ne 0 ]]; then
         return 1
     fi
