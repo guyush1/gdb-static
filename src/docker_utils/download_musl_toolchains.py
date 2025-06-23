@@ -11,13 +11,16 @@ import asyncio
 
 import aiohttp
 
+# NOTE: To add new architectures, you can use prebuilt toolchains from https://musl.cc/ or https://more.musl.cc/ .
+# musl.cc / more.musl.cc are not used here since these websites blacklist Github Actions CI.
+# As a result, I had to create the toolchains manually and include them here in order for our CI pipeline to pass.
 ARCHS = {
-    "x86_64" : "https://more.musl.cc/11/x86_64-linux-musl/x86_64-linux-musl-cross.tgz",
-    "arm" : "https://more.musl.cc/10/x86_64-linux-musl/arm-linux-musleabi-cross.tgz",
-    "aarch64" : "https://more.musl.cc/11/x86_64-linux-musl/aarch64-linux-musl-cross.tgz",
-    "powerpc" : "https://more.musl.cc/11/x86_64-linux-musl/powerpc-linux-musl-cross.tgz",
-    "mips" : "https://more.musl.cc/11/x86_64-linux-musl/mips-linux-musl-cross.tgz",
-    "mipsel" : "https://more.musl.cc/11/x86_64-linux-musl/mipsel-linux-musl-cross.tgz",
+    "x86_64" : "https://github.com/guyush1/musl-cross-make/releases/download/musl-gcc14/x86_64-linux-musl-cross.tgz",
+    "arm" : "https://github.com/guyush1/musl-cross-make/releases/download/musl-gcc14/arm-linux-musleabi-cross.tgz",
+    "aarch64" : "https://github.com/guyush1/musl-cross-make/releases/download/musl-gcc14/aarch64-linux-musl-cross.tgz",
+    "powerpc" : "https://github.com/guyush1/musl-cross-make/releases/download/musl-gcc14/powerpc-linux-musl-cross.tgz",
+    "mips" : "https://github.com/guyush1/musl-cross-make/releases/download/musl-gcc14/mips-linux-musl-cross.tgz",
+    "mipsel" : "https://github.com/guyush1/musl-cross-make/releases/download/musl-gcc14/mipsel-linux-musl-cross.tgz",
 }
 CHUNK_SIZE = 65536
 MUSL_TOOLCHAINS_DIR = Path("/musl-toolchains")
