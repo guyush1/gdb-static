@@ -135,6 +135,25 @@ The resulting binary will be placed in the `build/artifacts/` directory.
 
 </details>
 
+<details open>
+<summary>
+Adding a custom architecture
+</summary> <br />
+
+Adding a new architecture to the build system is straightforward. Follow these steps:
+
+- **Add a cross compiler**: <br />
+Add a musl-based compiler to the `ARCHS` dictionary in `src/docker_utils/download_musl_toolchains.py`. You can find musl-based compilers [here](https://more.musl.cc/). <br />
+If a musl-based compiler is not available for your architecture, you can instead install a compiler via `apt` in the Dockerfile. However, using a musl-based toolchain is highly recommended.
+- **Update the Makefile**: <br />
+Add the new architecture to the `ARCHS` variable in the Makefile.
+- **Modify `build.sh`**: <br />
+Locate the `set_compilation_variables` function in `build.sh`.
+  - Add the new architecture to the `supported_archs` variable (in the same way as in the Makefile).
+  - Add a new `if` branch to check for the new architecture, and within it, export the appropriate `HOST` variable using the compiler's target triple.
+
+</details>
+
 <a name="contributing_anchor"></a>
 ## Contributing
 
