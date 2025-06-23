@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.12
 
-from typing import List
 from pathlib import Path
+from typing import List
 
 import tarfile
 import tempfile
@@ -10,6 +10,7 @@ import shutil
 import asyncio
 
 import aiohttp
+import aiohttp.client_exceptions
 
 # NOTE: To add new architectures, you can use prebuilt toolchains from https://musl.cc/ or https://more.musl.cc/ .
 # musl.cc / more.musl.cc are not used here since these websites blacklist Github Actions CI.
@@ -26,9 +27,34 @@ CHUNK_SIZE = 65536
 MUSL_TOOLCHAINS_DIR = Path("/musl-toolchains")
 ENTRYPOINT = Path("/entrypoint.sh")
 
+NUM_RETRIES = 3
+RETRY_WAIT = 2
+
+async def retry_middleware(req: aiohttp.ClientRequest, handler: aiohttp.ClientHandlerType, max_retries = NUM_RETRIES) -> aiohttp.ClientResponse:
+    # If every retry ends in a timeoout, resp will not be defined. In such a case we want to raie
+    # last timeout that has happened as we don't have a valid or invalid response to return.
+    last_exception = None
+    resp = None
+
+    for _ in range(max_retries):
+        try:
+            resp = await handler(req)
+            if resp.ok:
+                return resp
+        except aiohttp.client_exceptions.ConnectionTimeoutError as e:
+            last_exception = e
+
+        await asyncio.sleep(RETRY_WAIT)
+
+    if resp is None:
+        raise last_exception
+
+    return resp
+
 async def download_file(url: str, filename: str):
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(middlewares=(retry_middleware,)) as session:
         async with session.get(url) as response:
+            response.raise_for_status()
             with open(filename, 'wb') as f:
                 async for data in response.content.iter_chunked(CHUNK_SIZE):
                     f.write(data)

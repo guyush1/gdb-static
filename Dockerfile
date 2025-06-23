@@ -25,11 +25,15 @@ RUN apt update && apt install -y \
     patch \
     pkg-config \
     python3.12 \
-    python3-aiohttp \
+    python3-pip \
     libpython3-dev \
     texinfo \
     wget \
     xz-utils
+
+# We require aiohttp >= 3.12 (For client middleware support), which is newer than the currently
+# available python3-aiohttp's version in Ubuntu.
+RUN python3.12 -m pip install --break-system-packages aiohttp
 
 COPY src/docker_utils/download_musl_toolchains.py .
 RUN python3.12 -u download_musl_toolchains.py
