@@ -171,7 +171,8 @@ change the height and width for each of the contributors from 80 to 50.
 
 [//]: contributor-faces
 <a href="https://github.com/guyush1"><img src="https://avatars.githubusercontent.com/u/82650790?v=4" title="guyush1" width="80" height="80"></a>
-<a href="https://github.com/RoiKlevansky"><img src="https://avatars.githubusercontent.com/u/78471889?v=4" title="RoiKlevansky" width="80" height="80"></a>
 <a href="https://github.com/roddyrap"><img src="https://avatars.githubusercontent.com/u/37045659?v=4" title="roddyrap" width="80" height="80"></a>
+<a href="https://github.com/RoiKlevansky"><img src="https://avatars.githubusercontent.com/u/78471889?v=4" title="RoiKlevansky" width="80" height="80"></a>
+<a href="https://github.com/sabae-valve"><img src="https://avatars.githubusercontent.com/u/185842408?v=4" title="sabae-valve" width="80" height="80"></a>
 
 [//]: contributor-faces
