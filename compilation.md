@@ -41,15 +41,16 @@ Work according to the following steps:
 2. run `./autogen.sh` to create the configure script from configure.sh.
 3. create a build dir (e.g build), and then cd into it.
 4. run `../configure --enable-static`
-5. run `cp -r ./include ./lib/.libs/`
-6. run `mkdir ./lib/.libs/lib/`
-7. run `cp ./lib/.libs/libiconv.a ./lib/.libs/lib/`
+5. run `make -j$(nproc)`
+6. run `cp -r ./include ./lib/.libs/`
+7. run `mkdir ./lib/.libs/lib/`
+8. run `cp ./lib/.libs/libiconv.a ./lib/.libs/lib/`
 
 ## 2) Compiling gdb
 
 Clone gdb from from my forked respository - https://github.com/guyush1/binutils-gdb/tree/gdb-static.
 
-Make sure to check out to the **gdb-static** branch - this branch contains all of the changes i had to do to the build system in order for it to compile gdb statically.
+Make sure to `git checkout` to the **gdb-static-16.3** branch - this branch contains all of the changes i had to do to the build system in order for it to compile gdb statically.
 
 Work according to the following steps:
 1. create a build dir.
