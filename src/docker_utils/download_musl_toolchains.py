@@ -61,7 +61,7 @@ async def download_file(url: str, filename: str):
 
 def extract_tarfile(filename: str, dst: Path):
     with tarfile.open(filename, "r") as tar:
-        tar.extractall(path=dst)
+        tar.extractall(path=dst, filter='tar')
 
 async def download_tarfile(tar_url: str, extraction_dir: Path):
     with tempfile.NamedTemporaryFile() as named_tempfile:

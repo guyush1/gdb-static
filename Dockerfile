@@ -19,24 +19,27 @@ RUN apt update && apt install -y \
     gcc-mipsel-linux-gnu \
     gcc-powerpc-linux-gnu \
     git \
+    libpython3-dev \
     libtool \
     m4  \
     make \
     patch \
     pkg-config \
-    python3.12 \
     python3-pip \
-    libpython3-dev \
+    software-properties-common \
     texinfo \
     wget \
     xz-utils
 
+RUN add-apt-repository ppa:deadsnakes/ppa
+RUN apt update && apt install -y python3.14
+
 # We require aiohttp >= 3.12 (For client middleware support), which is newer than the currently
 # available python3-aiohttp's version in Ubuntu.
-RUN python3.12 -m pip install --break-system-packages aiohttp
+RUN python3.14 -m pip install --break-system-packages aiohttp
 
 COPY src/docker_utils/download_musl_toolchains.py .
-RUN python3.12 -u download_musl_toolchains.py
+RUN python3.14 -u download_musl_toolchains.py
 
 WORKDIR /app/gdb
 
