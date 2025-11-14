@@ -1,4 +1,8 @@
 _aix_support
+_colorize
+_opcode_metadata
+_py_warnings
+annotationlib
 antigravity
 argparse
 ast
