@@ -768,6 +768,14 @@ function build_and_install_gdb() {
     fi
 }
 
+function verify_submodule_initialization() {
+    # Verify that all submodules are initialized.
+    if git submodule status | grep --quiet '^-'; then
+        >&2 echo "Error: git submodules are not initialized. Please run 'git submodule update --init --recursive' and then try to build again."
+        return 1
+    fi
+}
+
 function build_gdb_with_dependencies() {
     # Build gdb for a specific target architecture.
     #
@@ -785,6 +793,11 @@ function build_gdb_with_dependencies() {
     local gdb_bfd_archs="$5"
     local packages_dir="$build_dir/packages"
     local artifacts_dir="$build_dir/artifacts"
+
+    verify_submodule_initialization
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
 
     set_compilation_variables "$target_arch"
     if [[ $? -ne 0 ]]; then
