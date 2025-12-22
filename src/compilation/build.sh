@@ -407,6 +407,7 @@ function build_libffi() {
         --enable-static \
         --disable-shared \
         --disable-docs \
+        --host=$HOST \
         --prefix="${libffi_install_dir}"
     if [[ $? -ne 0 ]]; then
         return 1
@@ -508,7 +509,7 @@ function build_python() {
         --disable-test-modules \
         --with-ensurepip=no \
         --without-decimal-contextvar \
-        --build=x86_64-pc-linux-gnu \
+        --build=$(gcc -dumpmachine) \
         --host=$HOST \
         --with-build-python=/usr/bin/python3.14 \
         --disable-ipv6 \
@@ -836,10 +837,10 @@ function build_gdb_with_dependencies() {
 
     # Optional build components
     if [[ $full_build == "yes" && $full_build_python_support -eq 1 ]]; then
-        local libffi_install_dir="$(build_libffi "${packages_dir}/libffi" "${target_arch}")"
-        setup_libffi_env "${libffi_install_dir}"
+        local libffi_install_dir gdb_python_dir pygments_source_dir python_build_dir
 
-        local gdb_python_dir pygments_source_dir python_build_dir
+        libffi_install_dir="$(build_libffi "${packages_dir}/libffi" "${target_arch}")"
+        setup_libffi_env "${libffi_install_dir}"
 
         gdb_python_dir="$packages_dir/binutils-gdb/gdb/python/lib/"
         pygments_source_dir="$packages_dir/pygments/"
