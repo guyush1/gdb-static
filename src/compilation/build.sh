@@ -493,7 +493,7 @@ function build_python() {
     mkdir -p "$python_lib_dir"
 
     # Having a python-config file is an indication that we successfully built python.
-    if [[ -f "$python_lib_dir/python-config" && -f "$python_lib_dir/libpython3.14.a" ]]; then
+    if [[ -f "$python_lib_dir/python-config" && -f "$python_lib_dir/lib${PYTHON_VERSION}.a" ]]; then
         >&2 echo "Skipping build: libpython already built for $target_arch"
         return 0
     fi
@@ -511,7 +511,7 @@ function build_python() {
         --without-decimal-contextvar \
         --build=$(gcc -dumpmachine) \
         --host=$HOST \
-        --with-build-python=/usr/bin/python3.14 \
+        --with-build-python="/usr/bin/${PYTHON_VERSION}" \
         --disable-ipv6 \
         --disable-shared
 
@@ -522,7 +522,7 @@ function build_python() {
 
     # Regenerate frozen modules with gdb env varaible. Do it after the configure because we need
     # the `regen-frozen` makefile.
-    >&2 python3.14 ../Tools/build/freeze_modules.py
+    >&2 ${PYTHON_VERSION} ../Tools/build/freeze_modules.py
     if [[ $? -ne 0 ]]; then
         return 1
     fi

@@ -31,15 +31,18 @@ RUN apt update && apt install -y \
     wget \
     xz-utils
 
+ARG PYTHON_VERSION="python3.14"
+ENV PYTHON_VERSION="${PYTHON_VERSION}"
+
 RUN add-apt-repository ppa:deadsnakes/ppa
-RUN apt update && apt install -y python3.14
+RUN apt update && apt install -y ${PYTHON_VERSION}
 
 # We require aiohttp >= 3.12 (For client middleware support), which is newer than the currently
 # available python3-aiohttp's version in Ubuntu.
-RUN python3.14 -m pip install --break-system-packages aiohttp
+RUN ${PYTHON_VERSION} -m pip install --break-system-packages aiohttp
 
 COPY src/docker_utils/download_musl_toolchains.py .
-RUN python3.14 -u download_musl_toolchains.py
+RUN ${PYTHON_VERSION} -u download_musl_toolchains.py
 
 WORKDIR /app/gdb
 
