@@ -148,6 +148,7 @@ weakref
 _weakrefset
 webbrowser
 <wsgiref.**.*>
+<xml.**.*>
 zipapp
 <zipfile.**.*>
 <zoneinfo.**.*>
