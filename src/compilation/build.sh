@@ -83,17 +83,20 @@ function set_up_base_lib_search_paths() {
     # $3: mpfr build dir
     # $4: ncursesw build dir
     # $5: expat build dir
+    # $6: lzma build dir
     local iconv_build_dir="$1"
     local gmp_build_dir="$2"
     local mpfr_build_dir="$3"
     local ncursesw_build_dir="$4"
     local expat_build_dir="$5"
+    local lzma_build_dir="$6"
 
     set_up_lib_search_path $iconv_build_dir 0
     set_up_lib_search_path $gmp_build_dir 0
     set_up_lib_search_path $mpfr_build_dir 0
     set_up_lib_search_path $ncursesw_build_dir 1
     set_up_lib_search_path $expat_build_dir 1
+    set_up_lib_search_path $lzma_build_dir 1
 }
 
 function build_iconv() {
@@ -404,6 +407,7 @@ function build_libffi() {
         --enable-static \
         --disable-shared \
         --disable-docs \
+        --host=$HOST \
         --prefix="${libffi_install_dir}"
     if [[ $? -ne 0 ]]; then
         return 1
@@ -482,13 +486,14 @@ function build_python() {
     local target_arch="$2"
     local gdb_python_parent="$3"
     local pygments_source_dir="$4"
+
     local python_lib_dir="$(realpath "$python_dir/build-$target_arch")"
 
     echo "$python_lib_dir"
     mkdir -p "$python_lib_dir"
 
     # Having a python-config file is an indication that we successfully built python.
-    if [[ -f "$python_lib_dir/python-config" ]]; then
+    if [[ -f "$python_lib_dir/python-config" && -f "$python_lib_dir/lib${PYTHON_VERSION}.a" ]]; then
         >&2 echo "Skipping build: libpython already built for $target_arch"
         return 0
     fi
@@ -499,14 +504,14 @@ function build_python() {
     export LINKFORSHARED=" "
     export MODULE_BUILDTYPE="static"
     export CONFIG_SITE="$python_dir/config.site-static"
-    >&2 CFLAGS="-static" LDFLAGS="-static" ../configure \
+    >&2 CFLAGS="${CFLAGS} -static" LDFLAGS="${LDFLAGS} -static -llzma" ../configure \
         --prefix="$(realpath .)" \
         --disable-test-modules \
         --with-ensurepip=no \
         --without-decimal-contextvar \
-        --build=x86_64-pc-linux-gnu \
+        --build=$(gcc -dumpmachine) \
         --host=$HOST \
-        --with-build-python=/usr/bin/python3.12 \
+        --with-build-python="/usr/bin/${PYTHON_VERSION}" \
         --disable-ipv6 \
         --disable-shared
 
@@ -517,7 +522,7 @@ function build_python() {
 
     # Regenerate frozen modules with gdb env varaible. Do it after the configure because we need
     # the `regen-frozen` makefile.
-    >&2 python3.12 ../Tools/build/freeze_modules.py
+    >&2 ${PYTHON_VERSION} ../Tools/build/freeze_modules.py
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -840,16 +845,19 @@ function build_gdb_with_dependencies() {
                                  "$gmp_build_dir" \
                                  "$mpfr_build_dir" \
                                  "$ncursesw_build_dir" \
-                                 "$libexpat_build_dir"
+                                 "$libexpat_build_dir" \
+                                 "$lzma_build_dir"
 
     # Optional build components
     if [[ $full_build == "yes" && $full_build_python_support -eq 1 ]]; then
-        local libffi_install_dir="$(build_libffi "${packages_dir}/libffi" "${target_arch}")"
+        local libffi_install_dir gdb_python_dir pygments_source_dir python_build_dir
+
+        libffi_install_dir="$(build_libffi "${packages_dir}/libffi" "${target_arch}")"
         setup_libffi_env "${libffi_install_dir}"
 
-        local gdb_python_dir="$packages_dir/binutils-gdb/gdb/python/lib/"
-        local pygments_source_dir="$packages_dir/pygments/"
-        local python_build_dir="$(build_python "$packages_dir/cpython-static" "$target_arch" "$gdb_python_dir" "$pygments_source_dir")"
+        gdb_python_dir="$packages_dir/binutils-gdb/gdb/python/lib/"
+        pygments_source_dir="$packages_dir/pygments/"
+        python_build_dir="$(build_python "$packages_dir/cpython-static" "$target_arch" "$gdb_python_dir" "$pygments_source_dir" )"
         if [[ $? -ne 0 ]]; then
             return 1
         fi
