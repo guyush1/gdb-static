@@ -3,6 +3,10 @@ ac_cv_file__dev_ptmx=yes
 ac_cv_file__dev_ptc=no
 ac_cv_header_zlib_h=no
 
+# Fix the module import path, by telling Python it should look for modules in
+# the regular scope, not the installed scope.
+host_prefix=/usr
+
 # Custom flag that we added to configure, causes the check for zstd to automatically
 # fail and mark the library as missing. This is so that it wouldn't try to dynamically
 # link to it when linking python/gdb.
