@@ -501,13 +501,19 @@ function build_python() {
     pushd "$python_lib_dir" > /dev/null
     >&2 fancy_title "Building python for $target_arch"
 
+    # If we don't specify CURSES_LIBS and/or PANEL_LIBS Python accidentally (I assume) initializes
+    # the variable(s) as 'none required' and then failes when trying to use the variable(s) when
+    # linking because 'none' & 'required' aren't valid files or flags to gcc.
+    # We also need to pass these libs in the LIBS variable in order to pass the libraries to python-config.
     >&2 \
     LINKFORSHARED=" " \
     MODULE_BUILDTYPE="static" \
     CONFIG_SITE="${script_dir}/static-python.site" \
     CFLAGS="${CFLAGS} -static" \
     LDFLAGS="${LDFLAGS} -static" \
-    LIBS="${LIBS} -lexpat -llzma" \
+    CURSES_LIBS="-lncursesw" \
+    PANEL_LIBS="-lpanelw" \
+    LIBS="${LIBS} -lexpat -llzma -lpanelw -lncursesw" \
     ../configure \
         --prefix="$(realpath .)" \
         --disable-test-modules \

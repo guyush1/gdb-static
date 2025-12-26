@@ -28,6 +28,7 @@ copyreg
 cProfile
 csv
 <ctypes.**.*>
+<curses.**.*>
 dataclasses
 datetime
 <dbm.**.*>

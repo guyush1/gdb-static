@@ -12,13 +12,11 @@ pkg_check_module_ZLIB=no
 ac_static_libhacl=yes
 
 py_cv_module__decimal=n/a
-py_cv_module__curses=n/a
-py_cv_module__curses_panel=n/a
 py_cv_module_zlib=n/a
 py_cv_module_xxlimited=n/a
 py_cv_module__crypt=n/a
 
-# py_cv_module__curses=yes
-# py_cv_module__curses_panel=yes
+py_cv_module__curses=yes
+py_cv_module__curses_panel=yes
 
 with_system_expat=yes
