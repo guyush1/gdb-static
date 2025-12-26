@@ -101,6 +101,7 @@ _pydatetime
 _pydecimal
 _pyio
 _pylong
+<_pyrepl.**.*>
 queue
 quopri
 random
