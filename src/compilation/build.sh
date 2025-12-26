@@ -513,7 +513,7 @@ function build_python() {
     LDFLAGS="${LDFLAGS} -static" \
     CURSES_LIBS="-lncursesw" \
     PANEL_LIBS="-lpanelw" \
-    LIBS="${LIBS} -lexpat -llzma -lpanelw -lncursesw" \
+    LIBS="${LIBS} -lexpat -lffi -llzma -lpanelw -lncursesw" \
     ../configure \
         --prefix="$(realpath .)" \
         --disable-test-modules \
