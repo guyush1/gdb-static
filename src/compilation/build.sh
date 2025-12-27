@@ -84,12 +84,14 @@ function set_up_base_lib_search_paths() {
     # $4: ncursesw build dir
     # $5: expat build dir
     # $6: lzma build dir
+    # $7: zlib build dir
     local iconv_build_dir="$1"
     local gmp_build_dir="$2"
     local mpfr_build_dir="$3"
     local ncursesw_build_dir="$4"
     local expat_build_dir="$5"
     local lzma_build_dir="$6"
+    local zlib_build_dir="$7"
 
     set_up_lib_search_path $iconv_build_dir 0
     set_up_lib_search_path $gmp_build_dir 0
@@ -97,6 +99,7 @@ function set_up_base_lib_search_paths() {
     set_up_lib_search_path $ncursesw_build_dir 1
     set_up_lib_search_path $expat_build_dir 1
     set_up_lib_search_path $lzma_build_dir 1
+    set_up_lib_search_path $zlib_build_dir 1
 }
 
 function build_iconv() {
@@ -429,6 +432,47 @@ function build_libffi() {
     popd > /dev/null
 }
 
+function build_zlib() {
+    # Build zlib, for the zlib compression support (Also gz).
+    #
+    # Parameters:
+    # $1: zlib package directory
+    # $2: Target architecture
+    local zlib_dir="$1"
+    local target_arch="$2"
+
+    pushd "${zlib_dir}" > /dev/null
+
+    local zlib_build_dir="$(realpath "$zlib_dir/build-$target_arch")"
+    mkdir -p "${zlib_build_dir}"
+    pushd "${zlib_build_dir}" > /dev/null
+
+    local zlib_install_dir="${zlib_build_dir}/output/"
+    echo "${zlib_install_dir}"
+
+    if [[ -f "${zlib_install_dir}/lib/libz.a" ]]; then
+        >&2 echo "Skipping build: zlib already built for $target_arch"
+        return 0
+    fi
+
+    >&2 fancy_title "Building zlib for $target_arch"
+
+    >&2 ../configure --static --prefix="${zlib_install_dir}"
+    if [[ $? != 0 ]]; then
+        return 1
+    fi
+
+    >&2 make install
+    if [[ $? != 0 ]]; then
+        return 1
+    fi
+
+    >&2 fancy_title "Finished building zlib for $target_arch"
+
+    popd > /dev/null
+    popd > /dev/null
+}
+
 function add_to_pkg_config_path() {
     # This method add directories to the list that pkg-config looks for .pc (package config) files
     # when finding the correct flags for modules.
@@ -501,7 +545,7 @@ function build_python() {
     pushd "$python_lib_dir" > /dev/null
     >&2 fancy_title "Building python for $target_arch"
 
-    # If we don't specify CURSES_LIBS and/or PANEL_LIBS Python accidentally (I assume) initializes
+    # If we don't specify the .*_LIBS variables Python accidentally (I assume) initializes
     # the variable(s) as 'none required' and then failes when trying to use the variable(s) when
     # linking because 'none' & 'required' aren't valid files or flags to gcc.
     # We also need to pass these libs in the LIBS variable in order to pass the libraries to python-config.
@@ -513,7 +557,8 @@ function build_python() {
     LDFLAGS="${LDFLAGS} -static" \
     CURSES_LIBS="-lncursesw" \
     PANEL_LIBS="-lpanelw" \
-    LIBS="${LIBS} -lexpat -llzma -lpanelw -lncursesw" \
+    ZLIB_LIBS="-lz" \
+    LIBS="${LIBS} -lexpat -lffi -llzma -lpanelw -lncursesw -lz" \
     ../configure \
         --prefix="$(realpath .)" \
         --disable-test-modules \
@@ -683,6 +728,7 @@ function build_gdb() {
                  --with-gmp="$libgmp_prefix" \
                  --with-mpfr="$libmpfr_prefix" \
                  --enable-tui \
+                 --with-system-zlib \
                  --with-expat --with-libexpat-type=static \
                  --with-lzma=yes --with-liblzma-prefix="$liblzma_prefix" --with-liblzma-type="static" \
                  "${extra_flags[@]}" \
@@ -855,12 +901,18 @@ function build_gdb_with_dependencies() {
         return 1
     fi 
 
+    zlib_build_dir="$(build_zlib "${packages_dir}/zlib/" "${target_arch}")"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
     set_up_base_lib_search_paths "$iconv_build_dir" \
                                  "$gmp_build_dir" \
                                  "$mpfr_build_dir" \
                                  "$ncursesw_build_dir" \
                                  "$libexpat_build_dir" \
-                                 "$lzma_build_dir"
+                                 "$lzma_build_dir" \
+                                 "$zlib_build_dir"
 
     # Optional build components
     if [[ $full_build == "yes" && $full_build_python_support -eq 1 ]]; then
