@@ -50,7 +50,7 @@ Work according to the following steps:
 
 Clone gdb from from my forked respository - https://github.com/guyush1/binutils-gdb/tree/gdb-static.
 
-Make sure to `git checkout` to the **gdb-static-16.3** branch - this branch contains all of the changes i had to do to the build system in order for it to compile gdb statically.
+Make sure to `git checkout` to the **gdb-static-17.1** branch - this branch contains all of the changes i had to do to the build system in order for it to compile gdb statically.
 
 Work according to the following steps:
 1. create a build dir.
