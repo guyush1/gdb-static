@@ -501,10 +501,20 @@ function build_python() {
     pushd "$python_lib_dir" > /dev/null
     >&2 fancy_title "Building python for $target_arch"
 
-    export LINKFORSHARED=" "
-    export MODULE_BUILDTYPE="static"
-    export CONFIG_SITE="$python_dir/config.site-static"
-    >&2 CFLAGS="${CFLAGS} -static" LDFLAGS="${LDFLAGS} -static -llzma" ../configure \
+    # If we don't specify CURSES_LIBS and/or PANEL_LIBS Python accidentally (I assume) initializes
+    # the variable(s) as 'none required' and then failes when trying to use the variable(s) when
+    # linking because 'none' & 'required' aren't valid files or flags to gcc.
+    # We also need to pass these libs in the LIBS variable in order to pass the libraries to python-config.
+    >&2 \
+    LINKFORSHARED=" " \
+    MODULE_BUILDTYPE="static" \
+    CONFIG_SITE="${script_dir}/static-python.site" \
+    CFLAGS="${CFLAGS} -static" \
+    LDFLAGS="${LDFLAGS} -static" \
+    CURSES_LIBS="-lncursesw" \
+    PANEL_LIBS="-lpanelw" \
+    LIBS="${LIBS} -lexpat -llzma -lpanelw -lncursesw" \
+    ../configure \
         --prefix="$(realpath .)" \
         --disable-test-modules \
         --with-ensurepip=no \
@@ -514,6 +524,10 @@ function build_python() {
         --with-build-python="/usr/bin/${PYTHON_VERSION}" \
         --disable-ipv6 \
         --disable-shared
+
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
 
     # Extract the regular standard library modules that are to be frozen and include the gdb and pygments custom libraries.
     export EXTRA_FROZEN_MODULES="$(printf "%s" "$(< ${script_dir}/frozen_python_modules.txt)" | tr $'\n' ";")"

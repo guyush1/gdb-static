@@ -28,6 +28,7 @@ copyreg
 cProfile
 csv
 <ctypes.**.*>
+<curses.**.*>
 dataclasses
 datetime
 <dbm.**.*>
@@ -148,6 +149,7 @@ weakref
 _weakrefset
 webbrowser
 <wsgiref.**.*>
+<xml.**.*>
 zipapp
 <zipfile.**.*>
 <zoneinfo.**.*>
