@@ -4,3 +4,6 @@
 
 # Build folders
 build/
+
+# Ignore Python artifacts.
+**/__pycache__/

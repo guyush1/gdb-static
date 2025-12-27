@@ -36,18 +36,18 @@ help:
 	@echo ""
 	@echo "  make clean"
 
-build/build-docker-image.stamp: Dockerfile src/docker_utils/download_musl_toolchains.py
+build/build-docker-image.stamp: Dockerfile src/compilation/setup_musl_toolchains.py
 	mkdir -p build
 	docker buildx build --tag gdb-static .
 	touch build/build-docker-image.stamp
 
 build-docker-image: build/build-docker-image.stamp
 
-build/download-packages.stamp: build/build-docker-image.stamp src/compilation/download_packages.sh
+build/download-packages.stamp: build/build-docker-image.stamp src/compilation/download_packages.py
 	mkdir -p $(BUILD_PACKAGES_DIR)
 	docker run $(TTY_ARG) --user $(shell id -u):$(shell id -g) \
 		--rm --volume .:/app/gdb gdb-static env TERM=xterm-256color \
-		/app/gdb/src/compilation/download_packages.sh /app/gdb/$(BUILD_PACKAGES_DIR)/
+		/app/gdb/src/compilation/download_packages.py /app/gdb/$(BUILD_PACKAGES_DIR)/
 	touch build/download-packages.stamp
 
 build/symlink-git-packages.stamp: $(SUBMODULE_PACKAGES)
@@ -70,7 +70,7 @@ _build-%: symlink-git-packages download-packages build-docker-image
 	mkdir -p build
 	docker run $(TTY_ARG) --user $(shell id -u):$(shell id -g) \
 		--rm --volume .:/app/gdb gdb-static env TERM=xterm-256color \
-		/app/gdb/src/compilation/build.sh $* /app/gdb/build/ /app/gdb/src $(BUILD_TYPE) $(GDB_BFD_ARCHS)
+		/app/gdb/src/compilation/build.py $* /app/gdb/build/ /app/gdb/src $(BUILD_TYPE) $(GDB_BFD_ARCHS)
 
 pack: $(ALL_PACK_TARGETS)
 

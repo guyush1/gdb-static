@@ -18,7 +18,7 @@
     <img src="https://img.shields.io/github/contributors-anon/guyush1/gdb-static?color=yellow&style=flat-square" alt="contributors" style="height: 20px;">
   </a>
   <img src="https://img.shields.io/badge/GDB-v17.1-orange?logo=gnu&logoColor=white&style=flat-square" alt="gdb" style="height: 20px;">
-  <img src="https://img.shields.io/badge/Python-built--in-blue?logo=python&logoColor=white&style=flat-square" alt="python" style="height: 20px;">
+  <img src="https://img.shields.io/badge/Python-3.14.2-blue?logo=python&logoColor=white&style=flat-square" alt="python" style="height: 20px;">
 </h4>
 
 ## TL;DR
@@ -140,7 +140,7 @@ Adding a custom architecture
 Adding a new architecture to the build system is straightforward. Follow these steps:
 
 - **Add a cross compiler**: <br />
-Add a musl-based compiler to the `ARCHS` dictionary in `src/docker_utils/download_musl_toolchains.py`. You can find musl-based compilers [here](https://more.musl.cc/). <br />
+Add a musl-based compiler to the `ARCHS` dictionary in `src/docker_utils/setup_musl_toolchains.py`. You can find musl-based compilers [here](https://more.musl.cc/). <br />
 If a musl-based compiler is not available for your architecture, you can instead install a compiler via `apt` in the Dockerfile. However, using a musl-based toolchain is highly recommended.
 - **Update the Makefile**: <br />
 Add the new architecture to the `ARCHS` variable in the Makefile.
