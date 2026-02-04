@@ -13,13 +13,10 @@
 <h4 align="center">
   <a href="https://github.com/guyush1/gdb-static/releases/latest">
     <img src="https://img.shields.io/github/v/release/guyush1/gdb-static?style=flat-square" alt="release" style="height: 20px;">
-  <a href="https://github.com/guyush1/gdb-static/actions/workflows/pr-pipeline.yaml">
-    <img src="https://img.shields.io/github/actions/workflow/status/guyush1/gdb-static/pr-pipeline.yaml?style=flat-square&label=pipeline" alt="continuous integration" style="height: 20px;">
   </a>
   <a href="https://github.com/guyush1/gdb-static/graphs/contributors">
     <img src="https://img.shields.io/github/contributors-anon/guyush1/gdb-static?color=yellow&style=flat-square" alt="contributors" style="height: 20px;">
   </a>
-  <br>
   <img src="https://img.shields.io/badge/GDB-v17.1-orange?logo=gnu&logoColor=white&style=flat-square" alt="gdb" style="height: 20px;">
   <img src="https://img.shields.io/badge/Python-built--in-blue?logo=python&logoColor=white&style=flat-square" alt="python" style="height: 20px;">
 </h4>
