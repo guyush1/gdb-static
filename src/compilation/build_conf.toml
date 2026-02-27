@@ -1,0 +1,12 @@
+# This file contains the build configuration for a full build.
+# In order to disable a component, simply change the it to 'no'.
+# This allows us to fully control the binary extensions.
+
+[install]
+
+executable_suffix = ""
+
+[full_build]
+
+cross_arch_debugging = true
+python_support = true

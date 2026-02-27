@@ -25,6 +25,7 @@ RUN apt update && apt install -y \
     make \
     patch \
     pkg-config \
+    po4a \
     python3-pip \
     software-properties-common \
     texinfo \
@@ -41,8 +42,8 @@ RUN apt update && apt install -y ${PYTHON_VERSION}
 # available python3-aiohttp's version in Ubuntu.
 RUN ${PYTHON_VERSION} -m pip install --break-system-packages aiohttp
 
-COPY src/docker_utils/download_musl_toolchains.py .
-RUN ${PYTHON_VERSION} -u download_musl_toolchains.py
+COPY src/compilation/file_downloader.py src/compilation/setup_musl_toolchains.py ./
+RUN ${PYTHON_VERSION} -u setup_musl_toolchains.py
 
 WORKDIR /app/gdb
 
