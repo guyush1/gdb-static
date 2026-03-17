@@ -35,9 +35,9 @@ function set_compilation_variables() {
     elif [[ "$target_arch" == "powerpc" ]]; then
         export HOST=powerpc-linux-musl
     elif [[ "$target_arch" == "mips" ]]; then
-        export HOST=mips-linux-musl
+        export HOST=mips-linux-muslsf # We compile with a soft-float compiler to support a wide range of mips cpus.
     elif [[ "$target_arch" == "mipsel" ]]; then
-        export HOST=mipsel-linux-musl
+        export HOST=mipsel-linux-muslsf # We compile with a soft-float compiler to support a wide range of mips cpus.
     elif [[ "$target_arch" == "x86_64" ]]; then
         export HOST=x86_64-linux-musl
     fi

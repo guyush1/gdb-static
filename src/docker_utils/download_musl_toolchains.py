@@ -20,8 +20,8 @@ ARCHS = {
     "arm" : "https://github.com/guyush1/musl-cross-make/releases/download/musl-gcc14/arm-linux-musleabi-cross.tgz",
     "aarch64" : "https://github.com/guyush1/musl-cross-make/releases/download/musl-gcc14/aarch64-linux-musl-cross.tgz",
     "powerpc" : "https://github.com/guyush1/musl-cross-make/releases/download/musl-gcc14/powerpc-linux-musl-cross.tgz",
-    "mips" : "https://github.com/guyush1/musl-cross-make/releases/download/musl-gcc14/mips-linux-musl-cross.tgz",
-    "mipsel" : "https://github.com/guyush1/musl-cross-make/releases/download/musl-gcc14/mipsel-linux-musl-cross.tgz",
+    "mips" : "https://github.com/guyush1/musl-cross-make/releases/download/musl-gcc14/mips-linux-muslsf-cross.tgz",
+    "mipsel" : "https://github.com/guyush1/musl-cross-make/releases/download/musl-gcc14/mipsel-linux-muslsf-cross.tgz",
 }
 CHUNK_SIZE = 65536
 MUSL_TOOLCHAINS_DIR = Path("/musl-toolchains")
