@@ -52,7 +52,7 @@ async def retry_middleware(req: aiohttp.ClientRequest, handler: aiohttp.ClientHa
     return resp
 
 async def download_file(url: str, filename: str):
-    async with aiohttp.ClientSession(middlewares=(retry_middleware,)) as session:
+    async with aiohttp.ClientSession(middlewares=(retry_middleware,), timeout=aiohttp.ClientTimeout(0)) as session:
         async with session.get(url) as response:
             response.raise_for_status()
             with open(filename, 'wb') as f:
