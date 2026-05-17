@@ -26,3 +26,13 @@ jobs:
 
     - name: Build
       run: make build-${{ matrix.architecture }}-${{ matrix.build_type }} -j$((`nproc`+1))
+
+    - name: Pack
+      run: make pack-${{ matrix.architecture }}-${{ matrix.build_type }}
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: gdb-static-${{ matrix.architecture }}-${{ matrix.build_type }}
+        path: build/artifacts/gdb-static*.tar.gz
+        if-no-files-found: error
