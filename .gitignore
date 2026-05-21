@@ -4,3 +4,7 @@
 
 # Build folders
 build/
+
+# Temporary python files
+__pycache__/
+*.py[cod]
