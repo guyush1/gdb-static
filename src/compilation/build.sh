@@ -388,7 +388,7 @@ function build_libffi() {
 
     local libffi_build_dir="$(realpath "$libffi_dir/build-$target_arch")"
 
-    # libffi needs a custom install dir due to it's non-standard compilation directories.
+    # libffi needs a custom install dir due to its non-standard compilation directories.
     local libffi_install_dir="$libffi_build_dir/output"
     echo "${libffi_install_dir}"
 
@@ -400,10 +400,10 @@ function build_libffi() {
         return 0
     fi
 
+    >&2 fancy_title "Building libffi for $target_arch"
+
     >&2 ./autogen.sh
     pushd "${libffi_build_dir}" > /dev/null
-
-    >&2 fancy_title "Building libffi for $target_arch"
 
     >&2 CFLAGS="${CFLAGS} -DNO_JAVA_RAW_API" ../configure \
         --enable-silent-rules \
