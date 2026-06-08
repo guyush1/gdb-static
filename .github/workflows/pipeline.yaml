@@ -1,9 +1,12 @@
-name: gdb-static-pr-pipeline
+name: gdb-static-pipeline
 
 on:
   pull_request:
     branches:
       - '*'
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -25,7 +28,7 @@ jobs:
       run: sudo apt-get install -y wget
 
     - name: Build
-      run: make build-${{ matrix.architecture }}-${{ matrix.build_type }} -j$((`nproc`+1))
+      run: make build-${{ matrix.architecture }}-${{ matrix.build_type }} -j$(nproc)
 
     - name: Pack
       run: make pack-${{ matrix.architecture }}-${{ matrix.build_type }}
@@ -93,3 +96,26 @@ jobs:
 
     - name: Run tests
       run: make test-${{ matrix.architecture }}-${{ matrix.build_type }}
+
+  release:
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Publish release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: artifacts/**/*.tar.gz
+        body: |
+          There are 2 asset types:
+          - Slim releases contain all of the base features.
+          - Full releases also contain python & cross-architecture debugging support.
+          Please note that full release binaries are bigger.
+
