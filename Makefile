@@ -7,6 +7,12 @@ SLIM_BUILD_TARGETS := $(addsuffix -slim, $(BASE_BUILD_TARGETS))
 FULL_BUILD_TARGETS := $(addsuffix -full, $(BASE_BUILD_TARGETS))
 ALL_BUILD_TARGETS := $(SLIM_BUILD_TARGETS) $(FULL_BUILD_TARGETS)
 
+BASE_TEST_TARGETS := $(addprefix test-, $(ARCHS))
+
+SLIM_TEST_TARGETS := $(addsuffix -slim, $(BASE_TEST_TARGETS))
+FULL_TEST_TARGETS := $(addsuffix -full, $(BASE_TEST_TARGETS))
+ALL_TEST_TARGETS := $(SLIM_TEST_TARGETS) $(FULL_TEST_TARGETS)
+
 BASE_PACK_TARGETS := $(addprefix pack-, $(ARCHS))
 
 FULL_PACK_TARGETS := $(addsuffix -full, $(BASE_PACK_TARGETS))
@@ -20,7 +26,7 @@ BUILD_PACKAGES_DIR := "build/packages"
 # This is disabled by the ci automation manually.
 TTY_ARG ?= -it
 
-.PHONY: clean help download_packages build build-docker-image $(ALL_BUILD_TARGETS) $(ALL_PACK_TARGETS)
+.PHONY: clean help download_packages build build-docker-image $(ALL_BUILD_TARGETS) $(ALL_PACK_TARGETS) $(ALL_TEST_TARGETS)
 
 .NOTPARALLEL: build pack
 
@@ -79,6 +85,12 @@ $(SLIM_PACK_TARGETS): pack-%-slim:
 
 $(FULL_PACK_TARGETS): pack-%-full:
 	@BUILD_TYPE="full" $(MAKE) _pack-$*
+
+$(ALL_TEST_TARGETS): test-%:
+	@TARGET="$*"; \
+	TARGET_ARCH=$${TARGET%-*}; \
+	TARGET_TYPE=$${TARGET##*-}; \
+	python3 -m pytest -v src/tests/test_artifacts.py --arch="$$TARGET_ARCH" --build-type="$$TARGET_TYPE"
 
 _pack-%: build-%-$(BUILD_TYPE)
 	if [ ! -f "build/artifacts/gdb-static-$(BUILD_TYPE)-$*.tar.gz" ]; then \
