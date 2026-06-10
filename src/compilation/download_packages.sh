@@ -6,10 +6,10 @@ source "$script_dir/utils.sh"
 
 # List of package URLs to download
 SOURCE_URLS=(
-    "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.17.tar.gz"
+    "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.19.tar.gz"
     "https://ftp.gnu.org/pub/gnu/gmp/gmp-6.3.0.tar.xz"
-    "https://ftp.gnu.org/pub/gnu/mpfr/mpfr-4.2.1.tar.xz"
-    "https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.5.tar.gz"
+    "https://ftp.gnu.org/pub/gnu/mpfr/mpfr-4.2.2.tar.xz"
+    "https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.6.tar.gz"
 )
 
 function unpack_tarball() {
