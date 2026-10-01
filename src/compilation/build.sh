@@ -721,6 +721,7 @@ function build_gdb() {
     >&2 fancy_title "Building gdb for $target_arch"
 
     ../configure --enable-static --with-static-standard-libraries --disable-inprocess-agent \
+                 "${gdb_static_program_suffix:+--program-suffix=${gdb_static_program_suffix}}" \
                  --with-gdb-datadir="/usr/share/gdb" --with-separate-debug-dir="/usr/lib/debug" \
                  --with-system-gdbinit="/etc/gdb/gdbinit" --with-system-gdbinit-dir="/etc/gdb/gdbinit.d" \
                  --with-jit-reader-dir="/usr/lib/gdb" \
