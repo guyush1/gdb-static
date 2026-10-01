@@ -22,6 +22,8 @@ ALL_PACK_TARGETS := $(SLIM_PACK_TARGETS) $(FULL_PACK_TARGETS)
 SUBMODULE_PACKAGES := $(wildcard src/submodule_packages/*)
 BUILD_PACKAGES_DIR := "build/packages"
 
+DOCKER_BUILD_STAMP = build/build-docker-image.stamp
+
 # We would like to run in interactive mode when avaliable (non-ci usually).
 # This is disabled by the ci automation manually.
 TTY_ARG ?= -it
@@ -42,14 +44,14 @@ help:
 	@echo ""
 	@echo "  make clean"
 
-build/build-docker-image.stamp: Dockerfile src/docker_utils/download_musl_toolchains.py
+$(DOCKER_BUILD_STAMP): Dockerfile src/docker_utils/download_musl_toolchains.py
 	mkdir -p build
 	docker buildx build --tag gdb-static .
-	touch build/build-docker-image.stamp
+	touch $(DOCKER_BUILD_STAMP)
 
-build-docker-image: build/build-docker-image.stamp
+build-docker-image: $(DOCKER_BUILD_STAMP)
 
-build/download-packages.stamp: build/build-docker-image.stamp src/compilation/download_packages.sh
+build/download-packages.stamp: $(DOCKER_BUILD_STAMP) src/compilation/download_packages.sh
 	mkdir -p $(BUILD_PACKAGES_DIR)
 	docker run $(TTY_ARG) --user $(shell id -u):$(shell id -g) \
 		--rm --volume .:/app/gdb gdb-static env TERM=xterm-256color \
@@ -100,8 +102,15 @@ _pack-%: build-%-$(BUILD_TYPE)
 clean-git-packages:
 	git submodule foreach 'echo "$$sm_path" | grep "^src/submodule_packages/.*" && git clean -xffd && git restore .'
 
-clean: clean-git-packages
+clean: clean-git-packages clean-docker clean-artifacts
+
+clean-artifacts:
 	rm -rf build
-# Kill and remove all containers of image gdb-static
+
+clean-docker:
+	# Kill and remove all containers of image gdb-static
 	docker ps -a | grep -P "^[a-f0-9]+\s+gdb-static\s+" | awk '{print $$1}' | xargs docker rm -f 2>/dev/null || true
 	docker rmi -f gdb-static 2>/dev/null || true
+
+	# Indicate to make that a rebuild of the docker is necessary in the next build.
+	rm $(DOCKER_BUILD_STAMP)
