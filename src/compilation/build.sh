@@ -3,7 +3,7 @@
 # Include utils library
 script_dir=$(dirname "$0")
 source "$script_dir/utils.sh"
-source "$script_dir/full_build_conf.sh"
+source "$script_dir/build_conf.sh"
 
 # Don't want random unknown things to fail in the build procecss!
 set -e
