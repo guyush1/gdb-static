@@ -11,14 +11,8 @@
 </p>
 
 <h4 align="center">
-  <a href="https://github.com/guyush1/gdb-static/releases/latest">
-    <img src="https://img.shields.io/github/v/release/guyush1/gdb-static?style=flat-square" alt="release" style="height: 20px;">
-  </a>
-  <a href="https://github.com/guyush1/gdb-static/graphs/contributors">
-    <img src="https://img.shields.io/github/contributors-anon/guyush1/gdb-static?color=yellow&style=flat-square" alt="contributors" style="height: 20px;">
-  </a>
-  <img src="https://img.shields.io/badge/GDB-v17.1-orange?logo=gnu&logoColor=white&style=flat-square" alt="gdb" style="height: 20px;">
-  <img src="https://img.shields.io/badge/Python-built--in-blue?logo=python&logoColor=white&style=flat-square" alt="python" style="height: 20px;">
+  <img src="https://img.shields.io/badge/GDB-v18.1-orange?logo=gnu&logoColor=white&style=flat-square" alt="gdb" style="height: 20px;">
+  <img src="https://img.shields.io/badge/Python-v3.14.8-blue?logo=python&logoColor=white&style=flat-square" alt="python" style="height: 20px;">
 </h4>
 
 ## TL;DR
@@ -157,19 +151,3 @@ Locate the `set_compilation_variables` function in `build.sh`.
 - Bug Report: If you see an error message or encounter an issue while using gdb-static, please create a [bug report](https://github.com/guyush1/gdb-static/issues/new?assignees=&labels=bug&title=%F0%9F%90%9B+Bug+Report%3A+).
 
 - Feature Request: If you have an idea or if there is a capability that is missing and would make `gdb-static` more robust, please submit a [feature request](https://github.com/guyush1/gdb-static/issues/new?assignees=&labels=enhancement&title=%F0%9F%9A%80+Feature+Request%3A+).
-
-## Contributors
-
-<!---
-npx contributor-faces --exclude "*bot*" --limit 70 --repo "https://github.com/guyush1/gdb-static"
-
-change the height and width for each of the contributors from 80 to 50.
---->
-
-[//]: contributor-faces
-<a href="https://github.com/guyush1"><img src="https://avatars.githubusercontent.com/u/82650790?v=4" title="guyush1" width="80" height="80"></a>
-<a href="https://github.com/roddyrap"><img src="https://avatars.githubusercontent.com/u/37045659?v=4" title="roddyrap" width="80" height="80"></a>
-<a href="https://github.com/RoiKlevansky"><img src="https://avatars.githubusercontent.com/u/78471889?v=4" title="RoiKlevansky" width="80" height="80"></a>
-<a href="https://github.com/sabae-valve"><img src="https://avatars.githubusercontent.com/u/185842408?v=4" title="sabae-valve" width="80" height="80"></a>
-
-[//]: contributor-faces
