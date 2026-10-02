@@ -791,6 +791,10 @@ function install_gdb() {
         cp "$file" "$artifacts_location/"
     done < <(find "$temp_artifacts_dir/usr/local/bin" -type f -executable)
 
+    # Copy the LICENSE and NOTICES files to the artifacts directory
+    cp "$script_dir/../../LICENSE" "$artifacts_location/"
+    cp "$script_dir/../../NOTICES" "$artifacts_location/"
+
     rm -rf "$temp_artifacts_dir"
 }
 
