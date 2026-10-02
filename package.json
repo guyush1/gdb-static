@@ -1,7 +1,0 @@
-{
-    "name": "gdb-static",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/guyush1/gdb-static"
-    }
-}
