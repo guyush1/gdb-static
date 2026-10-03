@@ -375,6 +375,62 @@ function build_libexpat() {
     popd > /dev/null
 }
 
+function build_libuuid() {
+    # Build libuuid, for the ctypes python module.
+    #
+    # Parameters:
+    # $1: libuuid package directory
+    # $2: Target architecture
+    local libuuid_dir="$1"
+    local target_arch="$2"
+
+    pushd "${libuuid_dir}" > /dev/null
+
+    local libuuid_build_dir="$(realpath "$libuuid_dir/build-$target_arch")"
+
+    # libuuid needs a custom install dir due to its non-standard compilation directories.
+    local libuuid_install_dir="$libuuid_build_dir/output"
+    echo "${libuuid_install_dir}"
+
+    # Creates both the installation and build dirs because install is in build.
+    mkdir -p "${libuuid_install_dir}"
+
+    if [[ -f "$libuuid_install_dir/lib/libuuid.a" ]]; then
+        >&2 echo "Skipping build: libuuid already built for $target_arch"
+        return 0
+    fi
+
+    >&2 fancy_title "Building libuuid for $target_arch"
+
+    >&2 ./autogen.sh
+    pushd "${libuuid_build_dir}" > /dev/null
+
+    >&2 ../configure \
+        "CC=${CC}" "CXX=${CXX}" \
+        --host="${HOST}" \
+        --disable-all-programs --enable-libuuid \
+        --enable-static --disable-shared \
+        --prefix="${libuuid_install_dir}"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    >&2 make -j$(nproc)
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    >&2 make -j$(nproc) install
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    >&2 fancy_title "Finished building libuuid for $target_arch"
+
+    popd > /dev/null
+    popd > /dev/null
+}
+
 function build_libffi() {
     # Build libffi, for the ctypes python module.
     #
@@ -690,7 +746,8 @@ function build_python() {
     ZLIB_LIBS="-lz" \
     BZIP2_LIBS="-lbz2" \
     LIBZSTD_LIBS="-lzstd" \
-    LIBS="${LIBS} -lexpat -lffi -llzma -lpanelw -lncursesw -lz -lbz2 -lzstd" \
+    LIBUUID_LIBS="-luuid" \
+    LIBS="${LIBS} -lexpat -lffi -llzma -lpanelw -lncursesw -lz -lbz2 -lzstd -luuid" \
     ../configure \
         --prefix="$(realpath .)" \
         --disable-test-modules \
@@ -1081,6 +1138,13 @@ function build_gdb_with_dependencies() {
         fi
 
         set_up_lib_search_path "${bzip2_install_dir}" 1
+
+        libuuid_install_dir="$(build_libuuid "${packages_dir}/util-linux" "${target_arch}")"
+        if [[ $? -ne 0 ]]; then
+            return 1
+        fi
+
+        setup_pkgconfig_env "${libuuid_install_dir}/lib/pkgconfig/" "uuid"
 
         libffi_install_dir="$(build_libffi "${packages_dir}/libffi" "${target_arch}")"
         if [[ $? -ne 0 ]]; then
