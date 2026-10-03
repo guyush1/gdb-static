@@ -10,6 +10,7 @@ SOURCE_URLS=(
     "https://ftp.gnu.org/pub/gnu/gmp/gmp-6.3.0.tar.xz"
     "https://ftp.gnu.org/pub/gnu/mpfr/mpfr-4.2.2.tar.xz"
     "https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.6.tar.gz"
+    "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz"
 )
 
 function unpack_tarball() {

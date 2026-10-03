@@ -473,6 +473,42 @@ function build_zlib() {
     popd > /dev/null
 }
 
+function build_bzip2() {
+    # Build bzip2, for the bzip2 compression support.
+    #
+    # Parameters:
+    # $1: bzip2 package directory
+    # $2: Target architecture
+    local bzip2_dir="$1"
+    local target_arch="$2"
+
+    pushd "${bzip2_dir}" > /dev/null
+
+    local bzip2_install_dir="${bzip2_dir}/output-${target_arch}/"
+    echo "${bzip2_install_dir}"
+
+    if [[ -f "${bzip2_install_dir}/lib/libbz2.a" ]]; then
+        >&2 echo "Skipping build: bzip2 already built for ${target_arch}"
+        return 0
+    fi
+
+    >&2 fancy_title "Building bzip2 for ${target_arch}"
+
+    # It's important to clean because if the arch changed we don't want it to take the old file.
+    >&2 make "CC=${CC}" "CXX=${CXX}" clean bzip2
+    if [[ $? != 0 ]]; then
+        return 1
+    fi
+
+    >&2 make install PREFIX="${bzip2_install_dir}"
+    if [[ $? != 0 ]]; then
+        return 1
+    fi
+
+    >&2 fancy_title "Finished building bzip2 for ${target_arch}"
+    popd > /dev/null
+}
+
 function build_zstd() {
     # Build zstd, for the zstd compression suppor.
     #
@@ -599,8 +635,9 @@ function build_python() {
     CURSES_LIBS="-lncursesw" \
     PANEL_LIBS="-lpanelw" \
     ZLIB_LIBS="-lz" \
+    BZIP2_LIBS="-lbz2" \
     LIBZSTD_LIBS="-lzstd" \
-    LIBS="${LIBS} -lexpat -lffi -llzma -lpanelw -lncursesw -lz -lzstd" \
+    LIBS="${LIBS} -lexpat -lffi -llzma -lpanelw -lncursesw -lz -lbz2 -lzstd" \
     ../configure \
         --prefix="$(realpath .)" \
         --disable-test-modules \
@@ -972,9 +1009,20 @@ function build_gdb_with_dependencies() {
 
     # Optional build components
     if [[ $full_build == "yes" && $full_build_python_support -eq 1 ]]; then
-        local libffi_install_dir gdb_python_dir pygments_source_dir python_build_dir zstd_install_dir
+        local libffi_install_dir gdb_python_dir pygments_source_dir python_build_dir bzip2_install_dir zstd_install_dir
+
+        bzip2_install_dir="$(build_bzip2 "${packages_dir}/bzip2/" "${target_arch}")"
+        if [[ $? -ne 0 ]]; then
+            return 1
+        fi
+
+        set_up_lib_search_path "${bzip2_install_dir}" 1
 
         libffi_install_dir="$(build_libffi "${packages_dir}/libffi" "${target_arch}")"
+        if [[ $? -ne 0 ]]; then
+            return 1
+        fi
+
         setup_pkgconfig_env "${libffi_install_dir}/lib/pkgconfig/" "libffi"
 
         gdb_python_dir="$packages_dir/binutils-gdb/gdb/python/lib/"
