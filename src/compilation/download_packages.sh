@@ -10,6 +10,8 @@ SOURCE_URLS=(
     "https://ftp.gnu.org/pub/gnu/gmp/gmp-6.3.0.tar.xz"
     "https://ftp.gnu.org/pub/gnu/mpfr/mpfr-4.2.2.tar.xz"
     "https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.6.tar.gz"
+    "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz"
+    "https://ftp.gnu.org/gnu/readline/readline-8.3.tar.gz"
 )
 
 function unpack_tarball() {
@@ -130,9 +132,11 @@ function download_and_extract_package() {
     local output_dir="$2"
     local tarball=$(basename "$url")
 
-    download_package "$url" "$tarball"
-    if [[ $? -ne 0 ]]; then
-        return 1
+    if [ ! -f "${tarball}" ]; then
+        download_package "$url" "$tarball"
+        if [[ $? -ne 0 ]]; then
+            return 1
+        fi
     fi
 
     extract_package "$tarball" "$output_dir"

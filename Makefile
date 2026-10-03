@@ -60,7 +60,7 @@ build/download-packages.stamp: $(DOCKER_BUILD_STAMP) src/compilation/download_pa
 
 build/symlink-git-packages.stamp: $(SUBMODULE_PACKAGES)
 	mkdir -p $(BUILD_PACKAGES_DIR)
-	ln -sf $(addprefix /app/gdb/, $(SUBMODULE_PACKAGES)) $(BUILD_PACKAGES_DIR)/
+	ln -sf $(addprefix ../../, $(SUBMODULE_PACKAGES)) $(BUILD_PACKAGES_DIR)/
 
 symlink-git-packages: build/symlink-git-packages.stamp
 

@@ -21,3 +21,9 @@
 [submodule "src/submodule_packages/zlib"]
 	path = src/submodule_packages/zlib
 	url = git@github.com:madler/zlib.git
+[submodule "src/submodule_packages/zstd"]
+	path = src/submodule_packages/zstd
+	url = https://github.com/facebook/zstd.git
+[submodule "src/submodule_packages/util-linux"]
+	path = src/submodule_packages/util-linux
+	url = git@github.com:util-linux/util-linux.git

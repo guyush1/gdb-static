@@ -47,11 +47,12 @@ function set_compilation_variables() {
     export CC="${CROSS}gcc"
     export CXX="${CROSS}g++"
 
-    export CFLAGS="-Os"
-    export CXXFLAGS="-Os"
+    # Keep the original values in order to allow callers to build.sh to pass flags as well.
+    export CFLAGS="${CFLAGS} -Os"
+    export CXXFLAGS="${CXXFLAGS} -Os"
 
     # Strip the binary to reduce it's size.
-    export LDFLAGS="-s"
+    export LDFLAGS="${LDFLAGS} -s"
 }
 
 function set_up_lib_search_path() {
@@ -81,22 +82,19 @@ function set_up_base_lib_search_paths() {
     # $1: iconv build dir
     # $2: gmp build dir
     # $3: mpfr build dir
-    # $4: ncursesw build dir
-    # $5: expat build dir
-    # $6: lzma build dir
-    # $7: zlib build dir
+    # $4: expat build dir
+    # $5: lzma build dir
+    # $6: zlib build dir
     local iconv_build_dir="$1"
     local gmp_build_dir="$2"
     local mpfr_build_dir="$3"
-    local ncursesw_build_dir="$4"
-    local expat_build_dir="$5"
-    local lzma_build_dir="$6"
-    local zlib_build_dir="$7"
+    local expat_build_dir="$4"
+    local lzma_build_dir="$5"
+    local zlib_build_dir="$6"
 
     set_up_lib_search_path $iconv_build_dir 0
     set_up_lib_search_path $gmp_build_dir 0
     set_up_lib_search_path $mpfr_build_dir 0
-    set_up_lib_search_path $ncursesw_build_dir 1
     set_up_lib_search_path $expat_build_dir 1
     set_up_lib_search_path $lzma_build_dir 1
     set_up_lib_search_path $zlib_build_dir 1
@@ -296,9 +294,11 @@ function build_ncurses() {
 
     >&2 fancy_title "Building libncursesw for $target_arch"
 
-    ../configure --enable-static "CC=$CC" "CXX=$CXX" "--host=$HOST" \
+    # Generate shared for GDB testing things which need it.
+    ../configure --enable-static --with-shared "CC=$CC" "CXX=$CXX" "--host=$HOST" \
         "CFLAGS=$CFLAGS" "CXXFLAGS=$CXXFLAGS" "--enable-widec" \
-        --prefix="$ncurses_install_dir" --with-default-terminfo-dir="/usr/share/terminfo"  1>&2
+        --prefix="$ncurses_install_dir" --with-default-terminfo-dir="/usr/share/terminfo" \
+        --enable-pc-files --with-pkg-config-libdir="${ncurses_install_dir}/lib/pkgconfig/" 1>&2
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -372,6 +372,62 @@ function build_libexpat() {
 
     >&2 fancy_title "Finished building libexpat for $target_arch"
 
+    popd > /dev/null
+}
+
+function build_libuuid() {
+    # Build libuuid, for the ctypes python module.
+    #
+    # Parameters:
+    # $1: libuuid package directory
+    # $2: Target architecture
+    local libuuid_dir="$1"
+    local target_arch="$2"
+
+    pushd "${libuuid_dir}" > /dev/null
+
+    local libuuid_build_dir="$(realpath "$libuuid_dir/build-$target_arch")"
+
+    # libuuid needs a custom install dir due to its non-standard compilation directories.
+    local libuuid_install_dir="$libuuid_build_dir/output"
+    echo "${libuuid_install_dir}"
+
+    # Creates both the installation and build dirs because install is in build.
+    mkdir -p "${libuuid_install_dir}"
+
+    if [[ -f "$libuuid_install_dir/lib/libuuid.a" ]]; then
+        >&2 echo "Skipping build: libuuid already built for $target_arch"
+        return 0
+    fi
+
+    >&2 fancy_title "Building libuuid for $target_arch"
+
+    >&2 ./autogen.sh
+    pushd "${libuuid_build_dir}" > /dev/null
+
+    >&2 ../configure \
+        "CC=${CC}" "CXX=${CXX}" \
+        --host="${HOST}" \
+        --disable-all-programs --enable-libuuid \
+        --enable-static --disable-shared \
+        --prefix="${libuuid_install_dir}"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    >&2 make -j$(nproc)
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    >&2 make -j$(nproc) install
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    >&2 fancy_title "Finished building libuuid for $target_arch"
+
+    popd > /dev/null
     popd > /dev/null
 }
 
@@ -473,6 +529,82 @@ function build_zlib() {
     popd > /dev/null
 }
 
+function build_bzip2() {
+    # Build bzip2, for the bzip2 compression support.
+    #
+    # Parameters:
+    # $1: bzip2 package directory
+    # $2: Target architecture
+    local bzip2_dir="$1"
+    local target_arch="$2"
+
+    pushd "${bzip2_dir}" > /dev/null
+
+    local bzip2_install_dir="${bzip2_dir}/output-${target_arch}/"
+    echo "${bzip2_install_dir}"
+
+    if [[ -f "${bzip2_install_dir}/lib/libbz2.a" ]]; then
+        >&2 echo "Skipping build: bzip2 already built for ${target_arch}"
+        return 0
+    fi
+
+    >&2 fancy_title "Building bzip2 for ${target_arch}"
+
+    # It's important to clean because if the arch changed we don't want it to take the old file.
+    >&2 make "CC=${CC}" "CXX=${CXX}" clean bzip2
+    if [[ $? != 0 ]]; then
+        return 1
+    fi
+
+    >&2 make install PREFIX="${bzip2_install_dir}"
+    if [[ $? != 0 ]]; then
+        return 1
+    fi
+
+    >&2 fancy_title "Finished building bzip2 for ${target_arch}"
+    popd > /dev/null
+}
+
+function build_zstd() {
+    # Build zstd, for the zstd compression suppor.
+    #
+    # Parameters:
+    # $1: zstd package directory
+    # $2: Target architecture
+    local zstd_dir="$1"
+    local target_arch="$2"
+
+    pushd "${zstd_dir}" > /dev/null
+
+    local zstd_install_dir="${zstd_dir}/output-${target_arch}/"
+    echo "${zstd_install_dir}"
+
+    pushd "lib/" > /dev/null
+
+    if [[ -f "${zstd_install_dir}/lib/libzstd.a" ]]; then
+        >&2 echo "Skipping build: zstd already built for ${target_arch}"
+        return 0
+    fi
+
+    >&2 fancy_title "Building zstd for ${target_arch}"
+
+    # It's important to clean because if the arch changed we don't want it to take the old file.
+    >&2 make -j $(( $(nproc) - 1 )) "CC=${CC}" "CXX=${CXX}" clean lib-release
+    if [[ $? != 0 ]]; then
+        return 1
+    fi
+
+    >&2 make install PREFIX="${zstd_install_dir}"
+    if [[ $? != 0 ]]; then
+        return 1
+    fi
+
+    >&2 fancy_title "Finished building zstd for ${target_arch}"
+
+    popd > /dev/null
+    popd > /dev/null
+}
+
 function add_to_pkg_config_path() {
     # This method add directories to the list that pkg-config looks for .pc (package config) files
     # when finding the correct flags for modules.
@@ -488,27 +620,81 @@ function add_to_pkg_config_path() {
     fi
 }
 
-function setup_libffi_env() {
+function build_readline() {
+    # Build readline.
+    #
+    # Parameters:
+    # $1: readline package directory
+    # $2: target architecture
+    #
+    # Echoes:
+    # The readline build directory
+    #
+    # Returns:
+    # 0: success
+    # 1: failure
+
+    local readline_dir="$1"
+    local target_arch="$2"
+    local readline_build_dir="$(realpath "${readline_dir}/build-${target_arch}")"
+
+    mkdir -p "${readline_build_dir}"
+    echo "${readline_build_dir}"
+
+    if [[ -f "${readline_build_dir}/lib/libreadline.a" ]]; then
+        >&2 echo "Skipping build: readline already built for ${target_arch}"
+        return 0
+    fi
+
+    pushd "${readline_dir}/build-${target_arch}" > /dev/null
+
+    >&2 fancy_title "Building readline for $target_arch"
+
+    if [ -f "Makefile" ]; then
+        make distclean
+    fi
+
+    # Force readline to link with ncursesw, because that is what we already use elsewhere.
+    echo -e 'ac_cv_lib_tinfo_tgetent=no\nbash_cv_termcap_lib=libncursesw' > config.site
+    CONFIG_SITE="${PWD}/config.site" ../configure "CC=${CC}" "CXX=${CXX}" --host="${HOST}" --enable-static --prefix="${readline_build_dir}" 1>&2
+
+    make -j$(nproc) 1>&2
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    make -j$(nproc) install 1>&2
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    >&2 fancy_title "Finished building readline for $target_arch"
+
+    popd > /dev/null
+}
+
+function setup_pkgconfig_env() {
     # We need a valid pkg-config file for libffi in order for Python to recognize the package and
     # know that it exists. Because we a pkg-config file, we might as well use it in order to ensure
     # that we get the correct flags instead of manually typing them.
     # Becuase of this, the setup of libffi isn't done in set_up_lib_search_path, as we don't need it.
     #
     # Parameters:
-    # $1: Libffi installation dir
-    local libffi_install_dir="$1"
+    # $1: Lib installation dir
+    local lib_pkgconf_dir="$1"
+    local lib_pkgconf_name="$2"
 
     # Needed because this is how Python recognizes the available packages.
-    add_to_pkg_config_path "${libffi_install_dir}/lib/pkgconfig/"
+    add_to_pkg_config_path "${lib_pkgconf_dir}/"
 
     # If we have a pc file, might as well use it.
-    local libffi_cflags="$(pkg-config --cflags libffi)"
-    local libffi_libs="$(pkg-config --libs --static libffi)"
+    local lib_cflags="$(pkg-config --cflags "${lib_pkgconf_name}")"
+    local lib_libs="$(pkg-config --libs --static "${lib_pkgconf_name}")"
 
-    export CC="${CC} ${libffi_cflags}"
-    export CXX="${CXX} ${libffi_cflags}"
+    export CC="${CC} ${lib_cflags}"
+    export CXX="${CXX} ${lib_cflags}"
 
-    export LDFLAGS="${libffi_libs} ${LDFLAGS}"
+    export LDFLAGS="${lib_libs} ${LDFLAGS}"
 }
 
 function build_python() {
@@ -558,7 +744,10 @@ function build_python() {
     CURSES_LIBS="-lncursesw" \
     PANEL_LIBS="-lpanelw" \
     ZLIB_LIBS="-lz" \
-    LIBS="${LIBS} -lexpat -lffi -llzma -lpanelw -lncursesw -lz" \
+    BZIP2_LIBS="-lbz2" \
+    LIBZSTD_LIBS="-lzstd" \
+    LIBUUID_LIBS="-luuid" \
+    LIBS="${LIBS} -lexpat -lffi -llzma -lpanelw -lncursesw -lz -lbz2 -lzstd -luuid" \
     ../configure \
         --prefix="$(realpath .)" \
         --disable-test-modules \
@@ -671,8 +860,9 @@ function build_gdb() {
     # $4: libgmp prefix
     # $5: libmpfr prefix
     # $6: liblzma prefix
-    # $7: build mode: slim / full.
-    # $8: gdb cross-architecture binary format support formats (relevant for full builds only).
+    # $7: python directory, if relevant. Else empty string.
+    # $8: build mode: slim / full.
+    # $9: gdb cross-architecture binary format support formats (relevant for full builds only).
     #
     # Echoes:
     # The gdb build directory
@@ -687,8 +877,9 @@ function build_gdb() {
     local libgmp_prefix="$4"
     local libmpfr_prefix="$5"
     local liblzma_prefix="$6"
-    local full_build="$7"
-    local gdb_bfd_archs="$8"
+    local python_dir="$7"
+    local full_build="$8"
+    local gdb_bfd_archs="$9"
 
     local extra_flags=()
     if [[ "$full_build" == "yes" ]]; then
@@ -697,7 +888,7 @@ function build_gdb() {
         fi
 
         if [[ $full_build_python_support -eq 1 ]]; then
-            extra_flags+=("--with-python=/app/gdb/build/packages/cpython-static/build-$target_arch/bin/python3-config")
+            extra_flags+=("--with-python=${python_dir}/bin/python3-config")
         else
             extra_flags+=("--without-python")
         fi
@@ -720,7 +911,11 @@ function build_gdb() {
 
     >&2 fancy_title "Building gdb for $target_arch"
 
+    # Need to modify the LDFLAGS_FOR_BUILD in order for bfd to build its document cruncher (doc/chew)
+    # in a static manner so it wouldn't fail to find zstd.
+    LDFLAGS_FOR_BUILD="--static $(pkg-config --static --libs libzstd)" \
     ../configure --enable-static --with-static-standard-libraries --disable-inprocess-agent \
+                 --disable-source-highlight \
                  --with-gdb-datadir="/usr/share/gdb" --with-separate-debug-dir="/usr/lib/debug" \
                  --with-system-gdbinit="/etc/gdb/gdbinit" --with-system-gdbinit-dir="/etc/gdb/gdbinit.d" \
                  --with-jit-reader-dir="/usr/lib/gdb" \
@@ -728,7 +923,7 @@ function build_gdb() {
                  --with-gmp="$libgmp_prefix" \
                  --with-mpfr="$libmpfr_prefix" \
                  --enable-tui \
-                 --with-system-zlib \
+                 --with-zlib --with-zstd \
                  --with-expat --with-libexpat-type=static \
                  --with-lzma=yes --with-liblzma-prefix="$liblzma_prefix" --with-liblzma-type="static" \
                  "${extra_flags[@]}" \
@@ -807,10 +1002,11 @@ function build_and_install_gdb() {
     # $3: libgmp prefix
     # $4: libmpfr prefix
     # $5: liblzma prefix.
-    # $6: build mode: slim / full.
-    # $7: gdb cross-architecture binary format support formats (relevant for full builds only).
-    # $8: install directory
-    # $9: target architecture
+    # $6: python directory, if relevant. Else empty string.
+    # $7: build mode: slim / full.
+    # $8: gdb cross-architecture binary format support formats (relevant for full builds only).
+    # $9: install directory
+    # $10: target architecture
     #
     # Returns:
     # 0: success
@@ -821,12 +1017,13 @@ function build_and_install_gdb() {
     local libgmp_prefix="$3"
     local libmpfr_prefix="$4"
     local liblzma_prefix="$5"
-    local full_build="$6"
-    local gdb_bfd_archs="$7"
-    local artifacts_dir="$8"
-    local target_arch="$9"
+    local python_dir="$6"
+    local full_build="$7"
+    local gdb_bfd_archs="$8"
+    local artifacts_dir="$9"
+    local target_arch="${10}"
 
-    gdb_build_dir="$(build_gdb "$gdb_dir" "$target_arch" "$libiconv_prefix" "$libgmp_prefix" "$libmpfr_prefix" "$liblzma_prefix" "$full_build" "$gdb_bfd_archs")"
+    gdb_build_dir="$(build_gdb "$gdb_dir" "$target_arch" "$libiconv_prefix" "$libgmp_prefix" "$libmpfr_prefix" "$liblzma_prefix" "$python_dir" "$full_build" "$gdb_bfd_archs")"
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -890,7 +1087,7 @@ function build_gdb_with_dependencies() {
         return 1
     fi
 
-    ncursesw_build_dir="$(build_ncurses "$packages_dir/ncurses" "$target_arch")"
+    ncursesw_install_dir="$(build_ncurses "$packages_dir/ncurses" "$target_arch")"
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -910,20 +1107,51 @@ function build_gdb_with_dependencies() {
         return 1
     fi
 
+    zstd_install_dir="$(build_zstd "${packages_dir}/zstd/" "${target_arch}")"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    readline_install_dir="$(build_readline "${packages_dir}/readline" "${target_arch}")"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    setup_pkgconfig_env "${zstd_install_dir}/lib/pkgconfig/" "libzstd"
+    setup_pkgconfig_env "${ncursesw_install_dir}/lib/pkgconfig/" "ncursesw"
+    setup_pkgconfig_env "${readline_install_dir}/lib/pkgconfig/" "readline"
+
     set_up_base_lib_search_paths "$iconv_build_dir" \
                                  "$gmp_build_dir" \
                                  "$mpfr_build_dir" \
-                                 "$ncursesw_build_dir" \
                                  "$libexpat_build_dir" \
                                  "$lzma_build_dir" \
                                  "$zlib_build_dir"
 
     # Optional build components
     if [[ $full_build == "yes" && $full_build_python_support -eq 1 ]]; then
-        local libffi_install_dir gdb_python_dir pygments_source_dir python_build_dir
+        local libffi_install_dir gdb_python_dir pygments_source_dir python_build_dir bzip2_install_dir zstd_install_dir
+
+        bzip2_install_dir="$(build_bzip2 "${packages_dir}/bzip2/" "${target_arch}")"
+        if [[ $? -ne 0 ]]; then
+            return 1
+        fi
+
+        set_up_lib_search_path "${bzip2_install_dir}" 1
+
+        libuuid_install_dir="$(build_libuuid "${packages_dir}/util-linux" "${target_arch}")"
+        if [[ $? -ne 0 ]]; then
+            return 1
+        fi
+
+        setup_pkgconfig_env "${libuuid_install_dir}/lib/pkgconfig/" "uuid"
 
         libffi_install_dir="$(build_libffi "${packages_dir}/libffi" "${target_arch}")"
-        setup_libffi_env "${libffi_install_dir}"
+        if [[ $? -ne 0 ]]; then
+            return 1
+        fi
+
+        setup_pkgconfig_env "${libffi_install_dir}/lib/pkgconfig/" "libffi"
 
         gdb_python_dir="$packages_dir/binutils-gdb/gdb/python/lib/"
         pygments_source_dir="$packages_dir/pygments/"
@@ -938,6 +1166,7 @@ function build_gdb_with_dependencies() {
                           "$gmp_build_dir" \
                           "$mpfr_build_dir" \
                           "$lzma_build_dir" \
+                          "${python_build_dir:-""}" \
                           "$full_build" \
                           "$gdb_bfd_archs" \
                           "$artifacts_dir" \
