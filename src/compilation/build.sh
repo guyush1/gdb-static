@@ -473,6 +473,46 @@ function build_zlib() {
     popd > /dev/null
 }
 
+function build_zstd() {
+    # Build zstd, for the zstd compression suppor.
+    #
+    # Parameters:
+    # $1: zstd package directory
+    # $2: Target architecture
+    local zstd_dir="$1"
+    local target_arch="$2"
+
+    pushd "${zstd_dir}" > /dev/null
+
+    local zstd_install_dir="${zstd_dir}/output-${target_arch}/"
+    echo "${zstd_install_dir}"
+
+    pushd "lib/" > /dev/null
+
+    if [[ -f "${zstd_install_dir}/lib/libzstd.a" ]]; then
+        >&2 echo "Skipping build: zstd already built for ${target_arch}"
+        return 0
+    fi
+
+    >&2 fancy_title "Building zstd for ${target_arch}"
+
+    # It's important to clean because if the arch changed we don't want it to take the old file.
+    >&2 make -j $(( $(nproc) - 1 )) "CC=${CC}" "CXX=${CXX}" clean lib-release
+    if [[ $? != 0 ]]; then
+        return 1
+    fi
+
+    >&2 make install PREFIX="${zstd_install_dir}"
+    if [[ $? != 0 ]]; then
+        return 1
+    fi
+
+    >&2 fancy_title "Finished building zstd for ${target_arch}"
+
+    popd > /dev/null
+    popd > /dev/null
+}
+
 function add_to_pkg_config_path() {
     # This method add directories to the list that pkg-config looks for .pc (package config) files
     # when finding the correct flags for modules.
@@ -488,27 +528,28 @@ function add_to_pkg_config_path() {
     fi
 }
 
-function setup_libffi_env() {
+function setup_pkgconfig_env() {
     # We need a valid pkg-config file for libffi in order for Python to recognize the package and
     # know that it exists. Because we a pkg-config file, we might as well use it in order to ensure
     # that we get the correct flags instead of manually typing them.
     # Becuase of this, the setup of libffi isn't done in set_up_lib_search_path, as we don't need it.
     #
     # Parameters:
-    # $1: Libffi installation dir
-    local libffi_install_dir="$1"
+    # $1: Lib installation dir
+    local lib_pkgconf_dir="$1"
+    local lib_pkgconf_name="$2"
 
     # Needed because this is how Python recognizes the available packages.
-    add_to_pkg_config_path "${libffi_install_dir}/lib/pkgconfig/"
+    add_to_pkg_config_path "${lib_pkgconf_dir}/"
 
     # If we have a pc file, might as well use it.
-    local libffi_cflags="$(pkg-config --cflags libffi)"
-    local libffi_libs="$(pkg-config --libs --static libffi)"
+    local lib_cflags="$(pkg-config --cflags "${lib_pkgconf_name}")"
+    local lib_libs="$(pkg-config --libs --static "${lib_pkgconf_name}")"
 
-    export CC="${CC} ${libffi_cflags}"
-    export CXX="${CXX} ${libffi_cflags}"
+    export CC="${CC} ${lib_cflags}"
+    export CXX="${CXX} ${lib_cflags}"
 
-    export LDFLAGS="${libffi_libs} ${LDFLAGS}"
+    export LDFLAGS="${lib_libs} ${LDFLAGS}"
 }
 
 function build_python() {
@@ -558,7 +599,8 @@ function build_python() {
     CURSES_LIBS="-lncursesw" \
     PANEL_LIBS="-lpanelw" \
     ZLIB_LIBS="-lz" \
-    LIBS="${LIBS} -lexpat -lffi -llzma -lpanelw -lncursesw -lz" \
+    LIBZSTD_LIBS="-lzstd" \
+    LIBS="${LIBS} -lexpat -lffi -llzma -lpanelw -lncursesw -lz -lzstd" \
     ../configure \
         --prefix="$(realpath .)" \
         --disable-test-modules \
@@ -720,6 +762,9 @@ function build_gdb() {
 
     >&2 fancy_title "Building gdb for $target_arch"
 
+    # Need to modify the LDFLAGS_FOR_BUILD in order for bfd to build its document cruncher (doc/chew)
+    # in a static manner so it wouldn't fail to find zstd.
+    LDFLAGS_FOR_BUILD="--static $(pkg-config --static --libs libzstd)" \
     ../configure --enable-static --with-static-standard-libraries --disable-inprocess-agent \
                  --with-gdb-datadir="/usr/share/gdb" --with-separate-debug-dir="/usr/lib/debug" \
                  --with-system-gdbinit="/etc/gdb/gdbinit" --with-system-gdbinit-dir="/etc/gdb/gdbinit.d" \
@@ -728,7 +773,7 @@ function build_gdb() {
                  --with-gmp="$libgmp_prefix" \
                  --with-mpfr="$libmpfr_prefix" \
                  --enable-tui \
-                 --with-system-zlib \
+                 --with-zlib --with-zstd \
                  --with-expat --with-libexpat-type=static \
                  --with-lzma=yes --with-liblzma-prefix="$liblzma_prefix" --with-liblzma-type="static" \
                  "${extra_flags[@]}" \
@@ -910,6 +955,13 @@ function build_gdb_with_dependencies() {
         return 1
     fi
 
+    zstd_install_dir="$(build_zstd "${packages_dir}/zstd/" "${target_arch}")"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    setup_pkgconfig_env "${zstd_install_dir}/lib/pkgconfig/" "libzstd"
+
     set_up_base_lib_search_paths "$iconv_build_dir" \
                                  "$gmp_build_dir" \
                                  "$mpfr_build_dir" \
@@ -920,10 +972,10 @@ function build_gdb_with_dependencies() {
 
     # Optional build components
     if [[ $full_build == "yes" && $full_build_python_support -eq 1 ]]; then
-        local libffi_install_dir gdb_python_dir pygments_source_dir python_build_dir
+        local libffi_install_dir gdb_python_dir pygments_source_dir python_build_dir zstd_install_dir
 
         libffi_install_dir="$(build_libffi "${packages_dir}/libffi" "${target_arch}")"
-        setup_libffi_env "${libffi_install_dir}"
+        setup_pkgconfig_env "${libffi_install_dir}/lib/pkgconfig/" "libffi"
 
         gdb_python_dir="$packages_dir/binutils-gdb/gdb/python/lib/"
         pygments_source_dir="$packages_dir/pygments/"

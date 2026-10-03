@@ -21,6 +21,7 @@ RUN apt update && apt install -y \
     git \
     libpython3-dev \
     libtool \
+    libzstd-dev \
     m4  \
     make \
     patch \
