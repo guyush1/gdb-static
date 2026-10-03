@@ -131,9 +131,11 @@ function download_and_extract_package() {
     local output_dir="$2"
     local tarball=$(basename "$url")
 
-    download_package "$url" "$tarball"
-    if [[ $? -ne 0 ]]; then
-        return 1
+    if [ ! -f "${tarball}" ]; then
+        download_package "$url" "$tarball"
+        if [[ $? -ne 0 ]]; then
+            return 1
+        fi
     fi
 
     extract_package "$tarball" "$output_dir"

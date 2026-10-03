@@ -47,11 +47,12 @@ function set_compilation_variables() {
     export CC="${CROSS}gcc"
     export CXX="${CROSS}g++"
 
-    export CFLAGS="-Os"
-    export CXXFLAGS="-Os"
+    # Keep the original values in order to allow callers to build.sh to pass flags as well.
+    export CFLAGS="${CFLAGS} -Os"
+    export CXXFLAGS="${CXXFLAGS} -Os"
 
     # Strip the binary to reduce it's size.
-    export LDFLAGS="-s"
+    export LDFLAGS="${LDFLAGS} -s"
 }
 
 function set_up_lib_search_path() {
@@ -750,8 +751,9 @@ function build_gdb() {
     # $4: libgmp prefix
     # $5: libmpfr prefix
     # $6: liblzma prefix
-    # $7: build mode: slim / full.
-    # $8: gdb cross-architecture binary format support formats (relevant for full builds only).
+    # $7: python directory, if relevant. Else empty string.
+    # $8: build mode: slim / full.
+    # $9: gdb cross-architecture binary format support formats (relevant for full builds only).
     #
     # Echoes:
     # The gdb build directory
@@ -766,8 +768,9 @@ function build_gdb() {
     local libgmp_prefix="$4"
     local libmpfr_prefix="$5"
     local liblzma_prefix="$6"
-    local full_build="$7"
-    local gdb_bfd_archs="$8"
+    local python_dir="$7"
+    local full_build="$8"
+    local gdb_bfd_archs="$9"
 
     local extra_flags=()
     if [[ "$full_build" == "yes" ]]; then
@@ -776,7 +779,7 @@ function build_gdb() {
         fi
 
         if [[ $full_build_python_support -eq 1 ]]; then
-            extra_flags+=("--with-python=/app/gdb/build/packages/cpython-static/build-$target_arch/bin/python3-config")
+            extra_flags+=("--with-python=${python_dir}/bin/python3-config")
         else
             extra_flags+=("--without-python")
         fi
@@ -803,6 +806,7 @@ function build_gdb() {
     # in a static manner so it wouldn't fail to find zstd.
     LDFLAGS_FOR_BUILD="--static $(pkg-config --static --libs libzstd)" \
     ../configure --enable-static --with-static-standard-libraries --disable-inprocess-agent \
+                 --disable-source-highlight \
                  --with-gdb-datadir="/usr/share/gdb" --with-separate-debug-dir="/usr/lib/debug" \
                  --with-system-gdbinit="/etc/gdb/gdbinit" --with-system-gdbinit-dir="/etc/gdb/gdbinit.d" \
                  --with-jit-reader-dir="/usr/lib/gdb" \
@@ -889,10 +893,11 @@ function build_and_install_gdb() {
     # $3: libgmp prefix
     # $4: libmpfr prefix
     # $5: liblzma prefix.
-    # $6: build mode: slim / full.
-    # $7: gdb cross-architecture binary format support formats (relevant for full builds only).
-    # $8: install directory
-    # $9: target architecture
+    # $6: python directory, if relevant. Else empty string.
+    # $7: build mode: slim / full.
+    # $8: gdb cross-architecture binary format support formats (relevant for full builds only).
+    # $9: install directory
+    # $10: target architecture
     #
     # Returns:
     # 0: success
@@ -903,12 +908,13 @@ function build_and_install_gdb() {
     local libgmp_prefix="$3"
     local libmpfr_prefix="$4"
     local liblzma_prefix="$5"
-    local full_build="$6"
-    local gdb_bfd_archs="$7"
-    local artifacts_dir="$8"
-    local target_arch="$9"
+    local python_dir="$6"
+    local full_build="$7"
+    local gdb_bfd_archs="$8"
+    local artifacts_dir="$9"
+    local target_arch="${10}"
 
-    gdb_build_dir="$(build_gdb "$gdb_dir" "$target_arch" "$libiconv_prefix" "$libgmp_prefix" "$libmpfr_prefix" "$liblzma_prefix" "$full_build" "$gdb_bfd_archs")"
+    gdb_build_dir="$(build_gdb "$gdb_dir" "$target_arch" "$libiconv_prefix" "$libgmp_prefix" "$libmpfr_prefix" "$liblzma_prefix" "$python_dir" "$full_build" "$gdb_bfd_archs")"
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -1038,6 +1044,7 @@ function build_gdb_with_dependencies() {
                           "$gmp_build_dir" \
                           "$mpfr_build_dir" \
                           "$lzma_build_dir" \
+                          "${python_build_dir:-""}" \
                           "$full_build" \
                           "$gdb_bfd_archs" \
                           "$artifacts_dir" \
