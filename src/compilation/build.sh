@@ -82,22 +82,19 @@ function set_up_base_lib_search_paths() {
     # $1: iconv build dir
     # $2: gmp build dir
     # $3: mpfr build dir
-    # $4: ncursesw build dir
-    # $5: expat build dir
-    # $6: lzma build dir
-    # $7: zlib build dir
+    # $4: expat build dir
+    # $5: lzma build dir
+    # $6: zlib build dir
     local iconv_build_dir="$1"
     local gmp_build_dir="$2"
     local mpfr_build_dir="$3"
-    local ncursesw_build_dir="$4"
-    local expat_build_dir="$5"
-    local lzma_build_dir="$6"
-    local zlib_build_dir="$7"
+    local expat_build_dir="$4"
+    local lzma_build_dir="$5"
+    local zlib_build_dir="$6"
 
     set_up_lib_search_path $iconv_build_dir 0
     set_up_lib_search_path $gmp_build_dir 0
     set_up_lib_search_path $mpfr_build_dir 0
-    set_up_lib_search_path $ncursesw_build_dir 1
     set_up_lib_search_path $expat_build_dir 1
     set_up_lib_search_path $lzma_build_dir 1
     set_up_lib_search_path $zlib_build_dir 1
@@ -297,9 +294,11 @@ function build_ncurses() {
 
     >&2 fancy_title "Building libncursesw for $target_arch"
 
-    ../configure --enable-static "CC=$CC" "CXX=$CXX" "--host=$HOST" \
+    # Generate shared for GDB testing things which need it.
+    ../configure --enable-static --with-shared "CC=$CC" "CXX=$CXX" "--host=$HOST" \
         "CFLAGS=$CFLAGS" "CXXFLAGS=$CXXFLAGS" "--enable-widec" \
-        --prefix="$ncurses_install_dir" --with-default-terminfo-dir="/usr/share/terminfo"  1>&2
+        --prefix="$ncurses_install_dir" --with-default-terminfo-dir="/usr/share/terminfo" \
+        --enable-pc-files --with-pkg-config-libdir="${ncurses_install_dir}/lib/pkgconfig/" 1>&2
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -563,6 +562,59 @@ function add_to_pkg_config_path() {
     else
         export PKG_CONFIG_PATH="${new_pkg_config_dir}"
     fi
+}
+
+function build_readline() {
+    # Build readline.
+    #
+    # Parameters:
+    # $1: readline package directory
+    # $2: target architecture
+    #
+    # Echoes:
+    # The readline build directory
+    #
+    # Returns:
+    # 0: success
+    # 1: failure
+
+    local readline_dir="$1"
+    local target_arch="$2"
+    local readline_build_dir="$(realpath "${readline_dir}/build-${target_arch}")"
+
+    mkdir -p "${readline_build_dir}"
+    echo "${readline_build_dir}"
+
+    if [[ -f "${readline_build_dir}/lib/libreadline.a" ]]; then
+        >&2 echo "Skipping build: readline already built for ${target_arch}"
+        return 0
+    fi
+
+    pushd "${readline_dir}/build-${target_arch}" > /dev/null
+
+    >&2 fancy_title "Building readline for $target_arch"
+
+    if [ -f "Makefile" ]; then
+        make distclean
+    fi
+
+    # Force readline to link with ncursesw, because that is what we already use elsewhere.
+    echo -e 'ac_cv_lib_tinfo_tgetent=no\nbash_cv_termcap_lib=libncursesw' > config.site
+    CONFIG_SITE="${PWD}/config.site" ../configure "CC=${CC}" "CXX=${CXX}" --host="${HOST}" --enable-static --prefix="${readline_build_dir}" 1>&2
+
+    make -j$(nproc) 1>&2
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    make -j$(nproc) install 1>&2
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    >&2 fancy_title "Finished building readline for $target_arch"
+
+    popd > /dev/null
 }
 
 function setup_pkgconfig_env() {
@@ -978,7 +1030,7 @@ function build_gdb_with_dependencies() {
         return 1
     fi
 
-    ncursesw_build_dir="$(build_ncurses "$packages_dir/ncurses" "$target_arch")"
+    ncursesw_install_dir="$(build_ncurses "$packages_dir/ncurses" "$target_arch")"
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -1003,12 +1055,18 @@ function build_gdb_with_dependencies() {
         return 1
     fi
 
+    readline_install_dir="$(build_readline "${packages_dir}/readline" "${target_arch}")"
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
     setup_pkgconfig_env "${zstd_install_dir}/lib/pkgconfig/" "libzstd"
+    setup_pkgconfig_env "${ncursesw_install_dir}/lib/pkgconfig/" "ncursesw"
+    setup_pkgconfig_env "${readline_install_dir}/lib/pkgconfig/" "readline"
 
     set_up_base_lib_search_paths "$iconv_build_dir" \
                                  "$gmp_build_dir" \
                                  "$mpfr_build_dir" \
-                                 "$ncursesw_build_dir" \
                                  "$libexpat_build_dir" \
                                  "$lzma_build_dir" \
                                  "$zlib_build_dir"

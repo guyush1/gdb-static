@@ -11,6 +11,7 @@ SOURCE_URLS=(
     "https://ftp.gnu.org/pub/gnu/mpfr/mpfr-4.2.2.tar.xz"
     "https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.6.tar.gz"
     "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz"
+    "https://ftp.gnu.org/gnu/readline/readline-8.3.tar.gz"
 )
 
 function unpack_tarball() {
